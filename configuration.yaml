@@ -1,0 +1,1334 @@
+## Global configuration for camilor
+homeassistant:
+  name: Casa
+  # Location required to calculate the time the sun rises and sets - Bogotá
+  latitude: !secret latitude
+  longitude: !secret longitude
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: !secret elevation
+  # metric for Metric, imperial for Imperial
+  unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: !secret time_zone
+
+  ##CUSTOMIZER
+  customize:
+    # Phillips Hue lamps
+    light.hue_lamp_1:
+      friendly_name: Cuarto lampara Cata
+    light.hue_lamp_2:
+      friendly_name: Cuarto lampara Camilor
+    light.hue_lamp_3:
+      friendly_name: Cuarto lampara mesa
+    light.hue_white_lamp_1:
+      friendly_name: Cuarto rosado
+    light.hue_white_lamp_2:
+      friendly_name: Cuarto amarillo
+    #yr weather
+    sensor.yr_symbol:
+      friendly_name: Weather
+    sensor.yr_temperature:
+      friendly_name: Temperature
+    #hidden variables
+    #  input_select.variable_status:
+    #    hidden: true
+    switch.cuarto_kodi:
+      icon: mdi:kodi
+    switch.cuarto_netflix:
+      icon: mdi:movie
+    switch.cuarto_cable:
+      icon: mdi:television-guide
+    switch.home_theater_cable:
+      icon: mdi:television-guide
+    switch.home_theater_playstation:
+      icon: mdi:playstation
+    switch.home_theater_persiana:
+      icon: mdi:view-headline
+    switch.estudio_persiana:
+      icon: mdi:view-headline
+    switch.balcon_persiana:
+      icon: mdi:view-headline
+    switch.sala_persiana:
+      icon: mdi:view-headline
+    switch.comedor_persiana:
+      icon: mdi:view-headline
+    switch.escalera_persiana:
+      icon: mdi:view-headline
+
+## TOGGLES
+#introduction:
+# Enables the frontend
+frontend:
+panel_iframe:
+  router:
+    title: 'Router'
+    icon: 'mdi:router-wireless'
+    url: 'http://192.168.0.1'
+# Checks for available updates
+updater:
+http:
+  # Uncomment this to add a password (recommended!)
+  api_password: !secret api_password
+  trusted_networks:
+    - !secret trusted_networks
+# Discover some devices automatically
+discovery:
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+# Enables support for tracking state changes over time.
+history:
+# View all events in a logbook
+logbook:
+# Track the sun
+#logger:
+#  default: info
+sun:
+
+## DEVICES
+#Phillips hue
+emulated_hue:
+  host_ip: 192.168.0.15
+  listen_port: 8300
+light:
+  - platform: hue
+    host: 192.168.0.198
+    allow_unreachable: true
+
+#Binary sensors
+binary_sensor:
+#impresora
+  - platform: command_line
+    name: impresora
+    command: 'ping -c 1 192.168.0.198 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#ps
+  - platform: command_line
+    name: ps
+    command: 'ping -c 1 192.168.0.53 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: "1"
+    payload_off: "0"
+#slingbox
+  - platform: command_line
+    name: slingbox
+    command: 'ping -c 1 192.168.0.52 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#disktation
+  - platform: command_line
+    name: diskstation
+    command: 'ping -c 1 192.168.0.3 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Kodi
+  - platform: command_line
+    name: kodi_rpi
+    command: 'ping -c 1 192.168.0.14 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Camara 1
+  - platform: command_line
+    name: camara_1
+    command: 'ping -c 1 192.168.0.20 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Camara 2
+  - platform: command_line
+    name: camara_2
+    command: 'ping -c 1 192.168.0.21 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Camara 3
+  - platform: command_line
+    name: camara_3
+    command: 'ping -c 1 192.168.0.22 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Camara 4
+  - platform: command_line
+    name: camara_4
+    command: 'ping -c 1 192.168.0.23 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Samsung Cuarto
+  - platform: command_line
+    name: samsung_cuarto
+    command: 'ping -c 1 192.168.0.31 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Samsung Home Theater
+  - platform: command_line
+    name: samsung_ht
+    command: 'ping -c 1 192.168.0.30 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#AP Cuarto
+  - platform: command_line
+    name: ap_cuarto
+    command: 'ping -c 1 192.168.0.38 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#AP Sala
+  - platform: command_line
+    name: ap_sala
+    command: 'ping -c 1 192.168.0.39 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#MRX - 8
+  - platform: command_line
+    name: mrx8
+    command: 'ping -c 1 192.168.0.100 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#MRX-4i
+  - platform: command_line
+    name: mrx4
+    command: 'ping -c 1 192.168.0.101 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#TRC-1080 control cuarto
+  - platform: command_line
+    name: control_cuarto
+    command: 'ping -c 1 192.168.0.102 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Camilo iphone wifi
+  - platform: command_line
+    name: camiloiphonewifi
+    command: 'ping -c 1 192.168.0.12 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Cata iphone wifi
+  - platform: command_line
+    name: cataiphonewifi
+    command: 'ping -c 1 192.168.0.13 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Luz Myrian wifi
+  - platform: command_line
+    name: luzmyrianwifi
+    command: 'ping -c 1 192.168.0.150 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Phillips Hue
+  - platform: command_line
+    name: phillipshueip
+    command: 'ping -c 1 192.168.0.199 | grep "1 received" | wc -l'
+    sensor_class: connectivity
+    payload_on: 1
+    payload_off: 0
+#Weather Prediction
+sensor:
+  - platform: yr
+    monitored_conditions:
+      - temperature
+      - symbol
+#Speedtest
+  - platform: speedtest
+    minute: 60
+    monitored_conditions:
+      - download
+      - upload
+#RPI sensors
+  - platform: cpuspeed
+    name: CPU
+  - platform: systemmonitor
+    resources:
+      - type: disk_use_percent
+        arg: /
+#      - type: disk_use_percent
+#        arg: /var/log
+      - type: memory_use_percent
+#      - type: memory_use
+#      - type: memory_free
+      - type: processor_use
+#      - type: swap_use_percent
+#      - type: swap_use
+#      - type: swap_free
+#      - type: last_boot
+      - type: since_last_boot
+      - type: network_in
+        arg: eth0
+      - type: network_out
+        arg: eth0
+#      - type: packets_in
+#        arg: eth0
+#      - type: packets_out
+#        arg: eth0
+#      - type: ipv4_address
+#        arg: eth0
+
+  - platform: currencylayer
+    api_key: !secret currencylayer
+    base: USD #optional
+    quote:
+      - COP
+  - platform: yahoo_finance
+    symbols:
+      - TSLA
+      - GOOG
+      - TWTR
+      - IBM
+      - ORCL
+      - ^GSPC
+      - CLF17.NYM
+      - GCG17.CMX
+  - platform: time_date
+    display_options:
+      - 'time_date'
+#Morning Commute Google Travel Time Sensor
+  - platform: google_travel_time
+    name: Tiempo Trabajo a Casa
+    api_key: !secret googleTravelAPI
+    origin: !secret trabajo
+    destination: !secret casa
+    options:
+      mode: driving
+  - platform: google_travel_time
+    name: Tiempo Casa a Trabajo
+    api_key: !secret googleTravelAPI
+    origin: !secret casa
+    destination: !secret trabajo
+    options:
+      mode: driving
+#Command line sensors
+#  - platform: command_line
+#    command: "ping -c 1 192.168.0.12 | grep '1 received' | wc -l"
+#    name: ping
+#
+#  - platform: command_line
+#    command: "id"
+#    name: testTrue
+#Home automation with URC
+  - platform: darksky
+    api_key: !secret darkskyAPI
+    monitored_conditions:
+      - summary
+      - icon
+#      - nearest_storm_distance
+#      - nearest_storm_bearing
+      - precip_type
+      - precip_intensity
+      - precip_probability
+      - temperature
+      - apparent_temperature
+#      - dew_point
+      - wind_speed
+      - wind_bearing
+      - cloud_cover
+      - humidity
+#      - pressure
+#      - visibility
+#      - ozone
+#      - minutely_summary
+#      - hourly_summary
+#      - daily_summary
+#      - temperature_max
+#      - temperature_min
+#      - apparent_temperature_max
+#      - apparent_temperature_min
+#      - precip_intensity_max
+
+##SHELL COMMAND
+shell_command:
+#Cambio manual del estado de las persianas de la casa
+  sc_estudio_persiana_abrir: "echo '1'>/home/homeassistant/switches/state/estudio.persiana"
+  sc_estudio_persiana_cerrar: "echo '0'>/home/homeassistant/switches/state/estudio.persiana"
+  sc_escalera_persiana_abrir: "echo '1'>/home/homeassistant/switches/state/escalera.persiana"
+  sc_escalera_persiana_cerrar: "echo '0'>/home/homeassistant/switches/state/escalera.persiana"
+  sc_ht_persiana_abrir: "echo '1'>/home/homeassistant/switches/state/ht.persiana"
+  sc_ht_persiana_cerrar: "echo '0'>/home/homeassistant/switches/state/ht.persiana"
+  sc_comedor_persiana_abrir: "echo '1'>/home/homeassistant/switches/state/comedor.persiana"
+  sc_comedor_persiana_cerrar: "echo '0'>/home/homeassistant/switches/state/comedor.persiana"
+  sc_sala_persiana_abrir: "echo '1'>/home/homeassistant/switches/state/sala.persiana"
+  sc_sala_persiana_cerrar: "echo '0'>/home/homeassistant/switches/state/sala.persiana"
+  sc_balcon_persiana_abrir: "echo '1'>/home/homeassistant/switches/state/balcon.persiana"
+  sc_balcon_persiana_cerrar: "echo '0'>/home/homeassistant/switches/state/balcon.persiana"
+  sc_cuarto_kodi_on: "echo '1'>/home/homeassistant/switches/state/cuarto.kodi"
+  sc_cuarto_kodi_off: "echo '0'>/home/homeassistant/switches/state/cuarto.kodi"
+  sc_cuarto_netflix_on: "echo '1'>/home/homeassistant/switches/state/cuarto.netflix"
+  sc_cuarto_netflix_off: "echo '0'>/home/homeassistant/switches/state/cuarto.netflix"
+  sc_cuarto_cable_on: "echo '1'>/home/homeassistant/switches/state/cuarto.cable"
+  sc_cuarto_cable_off: "echo '0'>/home/homeassistant/switches/state/cuarto.cable"
+#Reinicio de servicios
+  reiniciar: '/usr/bin/sudo /run/system/shutdown -R now'
+  reiniciar_mosquitto: '/usr/bin/sudo /bin/systemctl restart mosquitto'
+
+##SCRIPTS
+script:
+  reiniciarpi:
+    alias: "Reboot Raspberry Pi"
+    sequence:
+    - service: shell_command.reiniciar
+  reiniciar_mosquitto:
+    alias: "Reboot Mosquitto service"
+    sequence:
+    - service: shell_command.reiniciar_mosquitto
+  timed_rose_lamp:
+    alias: "Turn on rose room lamp and set timer"
+    sequence:
+      # Cancel ev. old timers
+      - service: script.turn_off
+        data:
+           entity_id: script.timer_off_rose
+      - service: light.turn_on
+        data:
+          entity_id: light.hue_white_lamp_1
+          brightness: 30
+      # Set new timer
+      - service: script.turn_on
+        data:
+          entity_id: script.timer_off
+  timer_off_rose:
+    alias: "Turn off rose room lamp after 10 minutes"
+    sequence:
+      - delay:
+          minutes: 10
+      - service: light.turn_off
+        data:
+          entity_id: light.hue_white_lamp_1
+
+  timed_yellow_lamp:
+    alias: "Turn on yellow room lamp and set timer"
+    sequence:
+      # Cancel ev. old timers
+      - service: script.turn_off
+        data:
+           entity_id: script.timer_off_yellow
+      - service: light.turn_on
+        data:
+          entity_id: light.hue_white_lamp_2
+          brightness: 30
+      # Set new timer
+      - service: script.turn_on
+        data:
+          entity_id: script.timer_off
+  timer_off_yellow:
+    alias: "Turn off yellow room lamp after 10 minutes"
+    sequence:
+      - delay:
+          minutes: 10
+      - service: light.turn_off
+        data:
+          entity_id: light.hue_white_lamp_2
+
+
+#MQTT broker
+mqtt:
+  broker: 192.168.0.15
+  port: 1883
+  client_id: home-assistant-1
+  username: !secret mosquittoUser
+  password: !secret mosquittoPwd
+#Media players
+media_player:
+  - platform: kodi
+    host: http://192.168.0.14
+#media_player 2:
+#  - platform: samsungtv
+#    host: http://192.168.0.30
+#    name: TV Home Theater
+#media_player 3:
+#  - platform: samsungtv
+#    host: http://192.168.0.33
+#    name: TV Cuarto Principal
+#Variables
+# - platform: template
+#   sensors:
+#     variable:
+#       value_template:"{{ states('input_select.variable_status') }}"
+#       friendly_name: 'Variable'
+#Mensajes
+### Send messages ###
+notify:
+  - name: !secret telegramBot
+    platform: telegram
+    api_key: !secret telegramAPI
+    chat_id: !secret telegramchatid
+#  - name: notify
+#    platform: html5
+#    gcm_api_key:
+#    gcm_sender_id:
+
+
+#    platform: slack
+#    api_key: ABCDEFGHJKLMNOPQRSTUVXYZ
+#    default_channel: '#general'
+#  platform: googlevoice
+#  username: <redacted>
+#  password: <redacted>
+#  name: gvoic
+### Track who is home ###
+device_tracker:
+  - platform: tomato
+    host: 192.168.0.1
+    username: !secret tomatoUser
+    password: !secret tomatoPwd
+    http_id: !secret tomatoHttpId
+    track_new_devices: no
+    interval_seconds: 30
+    consider_home: 300
+  - platform: owntracks
+    max_gps_accuracy: 150
+
+#IFTTT
+ifttt:
+  key: !secret ifttt
+#Camaras
+camera:
+  platform: mjpeg
+  mjpeg_url: !secret camera1URL
+  name: Camara Cuarto Rosado
+camera 2:
+  platform: mjpeg
+  mjpeg_url: !secret camera2URL
+  name: Camara Cuarto Amarillo
+camera 3:
+  name: Mapa Camilo
+  platform: generic
+  still_image_url: !secret mapaCamilo
+  limit_refetch_to_url_change: true
+camera 4:
+    platform: mjpeg
+    mjpeg_url: !secret camera4URL
+    name: Camara Entrada
+camera 5:
+    platform: mjpeg
+    mjpeg_url: !secret camera5URL
+    name: Camara Sala
+
+
+#COVER
+cover:
+  platform: command_line
+  covers:
+    cp:
+      command_open: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.cortinas.abrir  -s; echo '1'>/home/homeassistant/switches/state/cuarto.cortinas"
+      command_close: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.cortinas.cerrar  -s; echo '0'>/home/homeassistant/switches/state/cuarto.cortinas"
+      command_stop:  "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.cortinas.stop  -s; echo 0>dev/null"
+      command_state: 'cat /home/homeassistant/switches/state/cuarto.cortinas'
+      friendly_name: Cuarto Cortina
+      value_template: >
+        {% if value == '1' %}
+        100
+        {% elif value == '0' %}
+        0
+        {% endif %}
+    crp:
+      command_open: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/rosa.cortina.abrir  -s; echo '1'>/home/homeassistant/switches/state/rosa.cortina"
+      command_close: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/rosa.cortina.cerrar  -s; echo '0'>/home/homeassistant/switches/state/rosa.cortina"
+      command_stop:  "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/rosa.cortina.stop  -s; echo 0>dev/null"
+      command_state: 'cat /home/homeassistant/switches/state/rosa.cortina'
+      friendly_name: Cuarto Rosa Cortina
+      value_template: >
+        {% if value == '1' %}
+        100
+        {% elif value == '0' %}
+        0
+        {% endif %}
+    cap:
+      command_open: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/amarillo.cortina.abrir  -s; echo '1'>/home/homeassistant/switches/state/amarillo.cortina"
+      command_close: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/amarillo.cortina.cerrar  -s; echo '0'>/home/homeassistant/switches/state/amarillo.cortina"
+      command_stop:  "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/amarillo.cortina.stop  -s; echo 0>dev/null"
+      command_state: 'cat /home/homeassistant/switches/state/amarillo.cortina'
+      friendly_name: Cuarto Amarillo Cortina
+      value_template: >
+        {% if value == '1' %}
+        100
+        {% elif value == '0' %}
+        0
+        {% endif %}
+#SWITCH
+switch:
+  platform: command_line
+  switches:
+#    test:
+#      command_on: 'echo "1">/home/homeassistant/my_switch'
+#      command_off: 'echo "0">/home/homeassistant/my_switch'
+#      command_state: 'cat /home/homeassistant/my_switch'
+#      value_template: >
+#        {% if value == '1' %}
+#        true
+#        {% elif value == '0' %}
+#        false
+#        {% endif %}
+    ep:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/estudio.persiana.abrir  -s; echo '1'>/home/homeassistant/switches/state/estudio.persiana"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/estudio.persiana.cerrar  -s; echo '0'>/home/homeassistant/switches/state/estudio.persiana"
+      command_state: 'cat /home/homeassistant/switches/state/estudio.persiana'
+      friendly_name: Estudio Persiana
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    cn:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.netflix.on  -s; echo '1'>/home/homeassistant/switches/state/cuarto.netflix"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.netflix.off  -s; echo '0'>/home/homeassistant/switches/state/cuarto.netflix"
+      command_state: 'cat /home/homeassistant/switches/state/cuarto.netflix'
+      friendly_name: Cuarto Netflix
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    ck:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.kodi.on  -s; echo '1'>/home/homeassistant/switches/state/cuarto.kodi"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.kodi.off  -s; echo '0'>/home/homeassistant/switches/state/cuarto.kodi"
+      command_state: 'cat /home/homeassistant/switches/state/cuarto.kodi'
+      friendly_name: Cuarto Kodi
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    cc:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.cable.on  -s; echo '1'>/home/homeassistant/switches/state/cuarto.cable"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/cuarto.cable.off  -s; echo '0'>/home/homeassistant/switches/state/cuarto.cable"
+      command_state: 'cat /home/homeassistant/switches/state/cuarto.cable'
+      friendly_name: Cuarto Cable
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    esp:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/escalera.persiana.abrir  -s; echo '1'>/home/homeassistant/switches/state/escalera.persiana"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/escalera.persiana.cerrar  -s; echo '0'>/home/homeassistant/switches/state/escalera.persiana"
+      command_state: 'cat /home/homeassistant/switches/state/escalera.persiana'
+      friendly_name: Escalera Persiana
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    htp:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/ht.persiana.abrir  -s; echo '1'>/home/homeassistant/switches/state/ht.persiana"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/ht.persiana.cerrar  -s; echo '0'>/home/homeassistant/switches/state/ht.persiana"
+      command_state: 'cat /home/homeassistant/switches/state/ht.persiana'
+      friendly_name: Home Theater Persiana
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    htps:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/ht.ps.on  -s; echo '1'>/home/homeassistant/switches/state/ht.ps"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/ht.ps.off  -s; echo '0'>/home/homeassistant/switches/state/ht.ps"
+      command_state: 'cat /home/homeassistant/switches/state/ht.ps'
+      friendly_name: Home Theater Playstation
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    htc:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/ht.cable.on  -s; echo '1'>/home/homeassistant/switches/state/ht.cable"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/ht.cable.off  -s; echo '0'>/home/homeassistant/switches/state/ht.cable"
+      command_state: 'cat /home/homeassistant/switches/state/ht.cable'
+      friendly_name: Home Theater Cable
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    bp:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/balcon.persiana.abrir  -s; echo '1'>/home/homeassistant/switches/state/balcon.persiana"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/balcon.persiana.cerrar  -s; echo '0'>/home/homeassistant/switches/state/balcon.persiana"
+      command_state: 'cat /home/homeassistant/switches/state/balcon.persiana'
+      friendly_name: Balcon Persiana
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    cop:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/comedor.persiana.abrir  -s; echo '1'>/home/homeassistant/switches/state/comedor.persiana"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/comedor.persiana.cerrar  -s; echo '0'>/home/homeassistant/switches/state/comedor.persiana"
+      command_state: 'cat /home/homeassistant/switches/state/comedor.persiana'
+      friendly_name: Comedor Persiana
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+    sp:
+      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/sala.persiana.abrir  -s; echo '1'>/home/homeassistant/switches/state/sala.persiana"
+      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/sala.persiana.cerrar  -s; echo '0'>/home/homeassistant/switches/state/sala.persiana"
+      command_state: 'cat /home/homeassistant/switches/state/sala.persiana'
+      friendly_name: Sala Persiana
+      value_template: >
+        {% if value == '1' %}
+        true
+        {% elif value == '0' %}
+        false
+        {% endif %}
+#
+#      command_on: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/"
+#      command_off: "/usr/bin/curl -i -m 1 http://192.168.0.100:5678/"
+
+
+##CUSTOM INPUTS - CAMBIAR STATUS
+input_select:
+  estudio_persiana_status:
+    name: Estatus persiana estudio
+    options:
+     - 'Abierta'
+     - 'Cerrada'
+    initial: ''
+    icon: mdi:blinds
+
+  home_theater_persiana_status:
+    name: Estatus persiana home theater
+    options:
+     - 'Abierta'
+     - 'Cerrada'
+    initial: ''
+    icon: mdi:blinds
+
+  escalera_persiana_status:
+    name: Estatus persiana escalera
+    options:
+     - 'Abierta'
+     - 'Cerrada'
+    initial: ''
+    icon: mdi:blinds
+
+  comedor_persiana_status:
+    name: Estatus persiana comedor
+    options:
+     - 'Abierta'
+     - 'Cerrada'
+    initial: ''
+    icon: mdi:blinds
+
+  sala_persiana_status:
+    name: Estatus persiana sala
+    options:
+     - 'Abierta'
+     - 'Cerrada'
+    initial: ''
+    icon: mdi:blinds
+
+  balcon_persiana_status:
+    name: Estatus persiana balcon
+    options:
+     - 'Abierta'
+     - 'Cerrada'
+    initial: ''
+    icon: mdi:blinds
+
+##AUTOMATIONS
+automation:
+  #Turn on rose room light
+#  alias: "Turn on rose room lights when press of button"
+#  trigger:
+#    - platform: state
+#      entity_id: sensor.motion_sensor
+#      to: 'on'
+#  action:
+#    service: homeassistant.turn_on
+#    entity_id: script.timed_rose_lamp
+  #Ajustes manuales de las variables de estado
+  - alias: Status persiana estudio cerrar
+    trigger:
+      platform: state
+      entity_id: input_select.estudio_persiana_status
+      to: "Cerrada"
+    action:
+      service: shell_command.sc_estudio_persiana_cerrar
+  - alias: Status persiana estudio abierta
+    trigger:
+      platform: state
+      entity_id: input_select.estudio_persiana_status
+      to: "Abierta"
+    action:
+      service: shell_command.sc_estudio_persiana_abrir
+  - alias: Status persiana escalera cerrar
+    trigger:
+      platform: state
+      entity_id: input_select.escalera_persiana_status
+      to: "Cerrada"
+    action:
+      service: shell_command.sc_escalera_persiana_cerrar
+  - alias: Status persiana escalera abierta
+    trigger:
+      platform: state
+      entity_id: input_select.escalera_persiana_status
+      to: "Abierta"
+    action:
+      service: shell_command.sc_escalera_persiana_abrir
+  - alias: Status persiana home theater cerrar
+    trigger:
+      platform: state
+      entity_id: input_select.home_theater_persiana_status
+      to: "Cerrada"
+    action:
+      service: shell_command.sc_home_theater_persiana_cerrar
+  - alias: Status persiana home theater abierta
+    trigger:
+      platform: state
+      entity_id: input_select.home_theater_persiana_status
+      to: "Abierta"
+    action:
+      service: shell_command.sc_home_theater_persiana_abrir
+  - alias: Status persiana comedor cerrar
+    trigger:
+      platform: state
+      entity_id: input_select.comedor_persiana_status
+      to: "Cerrada"
+    action:
+      service: shell_command.sc_comedor_persiana_cerrar
+  - alias: Status persiana comedor abierta
+    trigger:
+      platform: state
+      entity_id: input_select.comedor_persiana_status
+      to: "Abierta"
+    action:
+      service: shell_command.sc_comedor_persiana_abrir
+  - alias: Status persiana sala cerrar
+    trigger:
+      platform: state
+      entity_id: input_select.sala_persiana_status
+      to: "Cerrada"
+    action:
+      service: shell_command.sc_sala_persiana_cerrar
+  - alias: Status persiana sala abierta
+    trigger:
+      platform: state
+      entity_id: input_select.sala_persiana_status
+      to: "Abierta"
+    action:
+      service: shell_command.sc_sala_persiana_abrir
+  - alias: Status persiana balcon cerrar
+    trigger:
+      platform: state
+      entity_id: input_select.balcon_persiana_status
+      to: "Cerrada"
+    action:
+      service: shell_command.sc_balcon_persiana_cerrar
+  - alias: Status persiana balcon abierta
+    trigger:
+      platform: state
+      entity_id: input_select.balcon_persiana_status
+      to: "Abierta"
+    action:
+      service: shell_command.sc_balcon_persiana_abrir
+# Automations for switching when ip states are on
+  - alias: playstation on ht on
+    trigger:
+      platform: state
+      entity_id: binary_sensor.ps
+      to: "on"
+    action:
+      service: homeassistant.turn_on
+      entity_id: switch.home_theater_playstation
+
+  - alias: tv cuarto on cuarto on
+    trigger:
+      platform: state
+      entity_id: binary_sensor.samsung_cuarto
+      to: "on"
+    action:
+      service: shell_command.sc_cuarto_netflix_on
+#        - shell_command.sc_cuarto_netflix_on
+
+  - alias: tv cuarto off cuarto off
+    trigger:
+      platform: state
+      entity_id: binary_sensor.samsung_cuarto
+      to: "off"
+    action:
+      service: shell_command.sc_cuarto_netflix_off
+#        - shell_command.sc_cuarto_netflix_off
+
+#  - alias: test telegraf
+#    trigger:
+#      platform: time
+#      minutes: 10
+#    action:
+#      service: notify.Bot
+#      data:
+#        title: "Example timer"
+#        message: "Mensaje de ejemplo"
+
+# Activities when sun sets daily with people
+#  - alias: sun sets lights on
+#    hide_entity: True
+#    trigger:
+#      platform: sun
+#      event: sunset
+#      offset: "-00:45:00"
+#    condition:
+#      condition: state
+#      entity_id: group.all_devices
+#      state: 'home'
+#    action:
+#      - service: homeassistant.turn_on
+#        entity_id:
+#          - light.hue_lamp_1
+#          - light.hue_lamp_2
+#          - light.hue_lamp_3
+#          - light.hue_white_lamp_1
+
+# Activities when sun sets daily independent on people being there
+  - alias: sun sets
+    hide_entity: True
+    trigger:
+      platform: sun
+      event: sunset
+#      offset: "-00:45:00"
+#    condition:
+#      condition: state
+#      entity_id: group.all_devices
+#      state: 'home'
+    action:
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.escalera_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.home_theater_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.estudio_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.comedor_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.sala_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.balcon_persiana
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.escalera_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.home_theater_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.estudio_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.comedor_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.sala_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_off
+        entity_id:
+          - switch.balcon_persiana
+
+
+# Activities when sun rises on weekdays (omited mon for holidays)
+  - alias: sun rises weekday
+    hide_entity: True
+    trigger:
+      platform: sun
+      event: sunrise
+      offset: "-00:05:00"
+    condition:
+      condition: and
+      conditions:
+#        - condition: state
+#          entity_id: group.all_devices
+#          state: 'home'
+        - condition: time
+          weekday:
+            - tue
+            - wed
+            - thu
+            - fri
+    action:
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.escalera_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.home_theater_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.estudio_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.comedor_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.sala_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.balcon_persiana
+
+# Activities when sun rises on weekends (with mon for holidays)
+  - alias: sun rises weekend
+    hide_entity: True
+    trigger:
+      platform: time
+      after: '07:30:00'
+    condition:
+      condition: and
+      conditions:
+#        - condition: state
+#          entity_id: group.all_devices
+#          state: 'home'
+        - condition: time
+          weekday:
+            - mon
+            - sat
+            - sun
+    action:
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.escalera_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.home_theater_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.estudio_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.comedor_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.sala_persiana
+      - delay: 0:00:05
+      - service: homeassistant.turn_on
+        entity_id:
+          - switch.balcon_persiana
+
+  - alias: turn_all_off_3am
+    hide_entity: False
+    trigger:
+      platform: time
+      after: '03:00:00'
+    condition:
+      condition: and
+      conditions:
+        - condition: time
+          weekday:
+            - sun
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+    action:
+      - service: homeassistant.turn_off
+        entity_id:
+          - light.hue_lamp_1
+      - service: homeassistant.turn_off
+        entity_id:
+          - light.hue_lamp_2
+      - service: homeassistant.turn_off
+        entity_id:
+          - light.hue_lamp_3
+      - service: homeassistant.turn_off
+        entity_id:
+          - light.hue_white_lamp_1
+      - service: homeassistant.turn_off
+        entity_id:
+          - light.hue_white_lamp_2
+
+##ZONES
+zone:
+  name: Home
+  latitude: !secret latitude
+  longitude: !secret longitude
+  radius: 150
+  icon: mdi:home
+zone 2:
+  name: IBM
+  latitude: 4.689735
+  longitude: -74.063956
+  radius: 100
+  icon: mdi:factory
+zone 3:
+  name: Kinderen
+  latitude: 4.688581
+  longitude: -74.037719
+  radius: 100
+  icon: mdi:school
+zone 4:
+  name: Aeropuerto
+  latitude: 4.698532
+  longitude: -74.142636
+  radius: 500
+  icon: mdi:airplane
+  passive: true
+zone 5:
+  name: Colegio Andino
+  latitude: 4.794795
+  longitude: -74.047257
+  radius: 500
+  icon: mdi:school
+  passive: true
+zone 6:
+  name: Los Terwengel
+  latitude: 4.715074
+  longitude: -74.031089
+  radius: 100
+  icon: mdi:account-multiple
+zone 7:
+  name: Belitos
+  latitude: 4.709185
+  longitude: -74.033941
+  radius: 100
+  icon: mdi:account-multiple
+
+##GROUPS
+group:
+  default_view:
+    name: DEFAULT
+    view: yes
+    icon: mdi:home
+    entities:
+      - device_tracker.camilo_iphone
+      - device_tracker.catateriphone
+      - group.cuarto_rosado
+      - group.cuarto_amarillo
+      - group.cuarto
+      - group.home_theater
+      - group.sala
+      - group.resto_casa
+
+  Camilo:
+    name: Camilo
+    view: yes
+    entities:
+      - camera.mapa_camilo
+      - group.clima
+      - group.indicadores
+      - group.commute
+
+  sensores:
+    name: Tech
+    view: yes
+    entities:
+      - group.raspberry_pi
+      - group.velocidad
+      - group.devices
+
+  configuracion:
+    name: Config
+    view: yes
+    entities:
+      - group.comandos
+      - group.estadopersianas
+      - group.estadodispositivos
+      - group.automatizaciones
+
+  automatizaciones:
+    name: Automatizaciones
+    entities:
+      - automation.playstation_on_ht_on
+      - automation.sun_sets_lights_on
+      - automation.sun_sets
+      - automation.sun_rises_weekend
+      - automation.sun_rises_weekday
+
+  estadopersianas:
+    name: Ajustar estado persianas
+    entities:
+      - input_select.estudio_persiana_status
+      - input_select.escalera_persiana_status
+      - input_select.home_theater_persiana_status
+      - input_select.comedor_persiana_status
+      - input_select.sala_persiana_status
+      - input_select.balcon_persiana_status
+
+  estadodispositivos:
+    name: Ajustar estado dispositivos
+    entities:
+      - sensor.estudio_persiana_status
+
+  comandos:
+    name: Comandos
+    entities:
+      - script.reiniciarpi
+      - script.reiniciar_mosquitto
+
+  devices:
+    name: devices
+    entities:
+      - binary_sensor.ap_cuarto
+      - binary_sensor.ap_sala
+      - binary_sensor.camara_2
+      - binary_sensor.camara_3
+      - binary_sensor.camiloiphonewifi
+      - binary_sensor.cataiphonewifi
+      - binary_sensor.control_cuarto
+      - binary_sensor.disktation
+      - binary_sensor.impresora
+      - binary_sensor.kodi_rpi
+      - binary_sensor.luzmyrianwifi
+      - binary_sensor.macbookair
+      - binary_sensor.mrx4
+      - binary_sensor.mrx8
+      - binary_sensor.ps
+      - binary_sensor.samsung_cuarto
+      - binary_sensor.samsung_ht
+      - binary_sensor.slingbox
+      - binary_sensor.phillipshueip
+
+  clima:
+    name: clima
+    entities:
+      - sensor.dark_sky_summary
+      - sensor.dark_sky_apparent_temperature
+      - sensor.dark_sky_cloud_coverage
+      - sensor.dark_sky_humidity
+      - sensor.dark_sky_precip
+      - sensor.dark_sky_precip_probability
+      - sensor.dark_sky_precip_intensity
+      - sensor.dark_sky_wind_bearing
+      - sensor.dark_sky_wind_speed
+      - sun.sun
+
+  indicadores:
+    name: indicadores
+    entities:
+      - sensor.usd_cop
+      - sensor.goog
+      - sensor.gspc
+      - sensor.ibm
+      - sensor.orcl
+
+  commute:
+    name: Commute
+    entities:
+      - sensor.tiempo_casa_a_trabajo
+      - sensor.tiempo_trabajo_a_casa
+
+  raspberry_pi:
+    name: Raspberry Pi
+    entities:
+      - sensor.cpu_use
+      - sensor.disk_use_
+      - sensor.disk_use_varlog
+      - sensor.ram_use
+      - sensor.ram_free
+      - sensor.swap_use
+      - sensor.swap_free
+      - sensor.last_boot
+      - sensor.since_last_boot
+      - sensor.received_eth1
+      - sensor.sent_eth1
+
+  velocidad:
+    name: Velocidad Internet
+    entities:
+      - sensor.speedtest_download
+      - sensor.speedtest_upload
+
+  cuarto_rosado:
+    name: Cuarto Rosado
+    entities:
+      - camera.camara_cuarto_rosado
+      - light.hue_white_lamp_1
+      - cover.cuarto_rosa_cortina
+
+  cuarto_amarillo:
+    name: Cuarto Amarillo
+    entities:
+      - camera.camara_cuarto_amarillo
+      - light.hue_white_lamp_2
+      - cover.cuarto_amarillo_cortina
+
+  cuarto:
+    name: Cuarto Principal
+    entities:
+      - light.hue_lamp_1
+      - light.hue_lamp_2
+      - light.hue_lamp_3
+      - media_player.kodi
+      - cover.cuarto_cortina
+      - binary_sensor.samsung_cuarto
+      - switch.cuarto_kodi
+      - switch.cuarto_netflix
+      - switch.cuarto_cable
+      - binary_sensor.impresora
+      - binary_sensor.kodi_rpi
+#      - media_player.tv_cuarto_principal
+  home_theater:
+    name: Home Theater
+    entities:
+      - switch.home_theater_persiana
+      - binary_sensor.samsung_ht
+      - switch.home_theater_playstation
+      - binary_sensor.ps
+      - switch.home_theater_cable
+      - binary_sensor.slingbox
+      - camera.camara_entrada
+#      - media_player.tv_home_theater
+  sala:
+    name: Sala
+    entities:
+      - switch.balcon_persiana
+      - switch.comedor_persiana
+      - switch.sala_persiana
+      - camera.camara_sala
+      - light.hue_white_lamp_3
+      - light.hue_white_lamp_4
+
+  resto_casa:
+    name: Resto de la Casa
+    entities:
+      - switch.escalera_persiana
+      - switch.estudio_persiana
+#  dispositivos_Anochecer:
+#    name: Dispositivos al anochecer
+
+#zwave:
+#  usb_path: /dev/ttyACM0
