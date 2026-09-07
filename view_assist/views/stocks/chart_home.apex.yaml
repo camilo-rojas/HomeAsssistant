@@ -1,0 +1,108 @@
+# Replacement for the chart_home custom_field in stocks.yaml.
+# Requires apexcharts-card (HACS -> Frontend -> apexcharts-card).
+#
+# WHY THIS REPLACES mini-graph-card:
+#   mini-graph-card reads only the history API, which recorder.purge_keep_days
+#   caps at 10 days. apexcharts-card can read the long-term statistics table,
+#   which Home Assistant keeps hourly forever and never purges.
+#
+# TRUE STACKING, NOT THE FAKE KIND:
+#   The old chart faked stacking with cumulative series (net_liq / cash+options
+#   / cash) drawn largest-first. This uses the three real components and lets
+#   Apex stack them, so:
+#       cash + options_value + stocks_value == net liquidation
+#   Side benefit: the old lower_bound:~100000 made the Cash band read smaller
+#   than its true share. Starting at 0 fixes that - every band is now honestly
+#   proportional.
+#
+# TIMEFRAME:
+#   graph_span: 180d with period: day  = 180 points, the 6-month view.
+#   Data starts 2026-08-19, so this looks mostly empty until history builds.
+#   For a denser interim chart change exactly two lines:
+#       graph_span: 30d        (instead of 180d)
+#       period: hour           (instead of day, on all three series)
+chart_home:
+  card:
+    type: custom:apexcharts-card
+    graph_span: 180d
+    stacked: true
+    header:
+      show: false
+    all_series_config:
+      type: area
+      stroke_width: 2
+      opacity: 0.55
+      # Long-term statistics. These sensors are state_class:total, so mean/min/max
+      # are NULL in the statistics table - only "state" is populated. Using
+      # type:mean here silently yields an empty chart.
+      statistics:
+        type: state
+        period: day
+    series:
+      - entity: sensor.robotray_cash
+        name: Cash
+        color: '#3B82F6'
+      - entity: sensor.robotray_options_value
+        name: Options
+        color: '#A855F7'
+      - entity: sensor.robotray_stocks_value
+        name: Stocks
+        color: '#22C55E'
+    apex_config:
+      chart:
+        height: 288
+        background: 'transparent'
+        toolbar:
+          show: false
+        animations:
+          enabled: false
+      dataLabels:
+        enabled: false
+      legend:
+        show: true
+        position: bottom
+        horizontalAlign: left
+        labels:
+          colors: '#ECECEC'
+        fontSize: '12px'
+        markers:
+          width: 10
+          height: 10
+      grid:
+        borderColor: 'rgba(255,255,255,0.10)'
+        strokeDashArray: 3
+      xaxis:
+        labels:
+          style:
+            colors: 'rgba(255,255,255,0.62)'
+            fontSize: '11px'
+          datetimeUTC: false
+      yaxis:
+        min: 0
+        forceNiceScale: true
+        labels:
+          style:
+            colors: 'rgba(255,255,255,0.62)'
+            fontSize: '11px'
+          formatter: |
+            EVAL:function(v) {
+              if (v === null || v === undefined) return '';
+              return '$' + (v/1000).toFixed(0) + 'k';
+            }
+      tooltip:
+        theme: dark
+        x:
+          format: 'dd MMM yyyy'
+    card_mod:
+      style: |
+        ha-card {
+          background: #000000 !important;
+          border: none;
+          box-shadow: none;
+          border-radius: 0.6rem;
+          height: 100% !important;
+          padding: 1.3rem 1rem 0.5rem 1.1rem;
+          box-sizing: border-box;
+          --primary-text-color: #ECECEC;
+          --secondary-text-color: rgba(255,255,255,0.62);
+        }

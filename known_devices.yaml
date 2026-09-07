@@ -1,0 +1,4 @@
+# Legacy device_tracker store - retired 2026-08-21.
+# ana_tracker and ada_tracker moved to MQTT device trackers defined in
+# configuration.yaml, driven by the Presence - Mellizas automations.
+# Leaving this file empty stops the deprecated component recreating them.

@@ -1,0 +1,121 @@
+# Candlestick chart_home, hand-rolled on ApexCharts inside a button-card
+# custom_field. See stocks.yaml history for why:
+#   apexcharts-card v2.2.3 hard-rejects chart_type: candlestick via a runtime
+#   type guard (union of line|scatter|pie|donut|radialBar). Its apex_config
+#   escape hatch does not help either - the card's series builder and y-axis
+#   autoscaling assume scalar y values, and candles need y:[o,h,l,c].
+#
+# ApexCharts itself is already loaded: apexcharts-card does
+# `globalThis.ApexCharts = vs` when its bundle runs, so the library is on
+# window for free. No CDN, no second download, works offline, and it tracks
+# whatever version HACS has installed.
+#
+# The <img onload> is the injection trick: button-card sets custom_field HTML
+# via innerHTML, and <script> tags do not execute that way. A 1x1 transparent
+# GIF data-URI fires onload synchronously with no network request.
+chart_home: |-
+  [[[
+    const ENTITY = "sensor.robotray_ohlc";
+    const s = hass.states[ENTITY];
+    const rows = (s && s.attributes && s.attributes.data) || [];
+
+    // Drop synthetic periods (samples==1 -> open==high==low==close). They
+    // render as flat ticks and only add noise. Weekends are flat for the
+    // same reason but arrive non-synthetic, so filter zero-range too.
+    const pts = rows
+      .filter(d => d.synthetic !== true)
+      .filter(d => !(d.open === d.high && d.high === d.low && d.low === d.close))
+      // Weekend guard. With interval=weekly every period_start is a Monday so
+      // this is a no-op, but it keeps Sat/Sun candles out if the secret is
+      // ever switched to interval=daily - markets are shut, so those periods
+      // carry no range and would only add gaps.
+      .filter(d => { const w = new Date(d.period_start + "T00:00:00").getDay(); return w !== 0 && w !== 6; })
+      .map(d => ({
+        x: new Date(d.period_start + "T00:00:00").getTime(),
+        y: [d.open, d.high, d.low, d.close]
+      }))
+      .sort((a, b) => a.x - b.x);
+
+    // Defined once on window; the onload handler below just calls it.
+    if (!window.__rrRenderCandles) {
+      window.__rrRenderCandles = function (img, tries) {
+        tries = tries || 0;
+        const host = img.parentElement;
+        if (!host) return;
+        const el = host.querySelector(".rr-candles");
+        if (!el) return;
+
+        // apexcharts-card's bundle may not have executed yet on a cold load.
+        if (typeof ApexCharts === "undefined") {
+          if (tries < 40) setTimeout(() => window.__rrRenderCandles(img, tries + 1), 150);
+          return;
+        }
+
+        const data = JSON.parse(el.dataset.pts || "[]");
+        if (el.__chart) { try { el.__chart.destroy(); } catch (e) {} el.__chart = null; }
+        if (!data.length) {
+          el.innerHTML = '<div style="color:rgba(255,255,255,0.5);font-size:2vh;'
+            + 'display:flex;align-items:center;justify-content:center;height:100%;">'
+            + 'No candles yet</div>';
+          return;
+        }
+
+        el.__chart = new ApexCharts(el, {
+          chart: {
+            type: "candlestick",
+            height: "100%",
+            background: "transparent",
+            toolbar: { show: false },
+            zoom: { enabled: false },
+            animations: { enabled: false },
+            fontFamily: "inherit"
+          },
+          theme: { mode: "dark" },
+          series: [{ name: "Net Liquidation", data: data }],
+          plotOptions: {
+            candlestick: {
+              colors: { upward: "#22C55E", downward: "#E74C3C" },
+              wick: { useFillColor: true }
+            }
+          },
+          grid: {
+            borderColor: "rgba(255,255,255,0.10)",
+            strokeDashArray: 3,
+            padding: { left: 12, right: 8, top: 0, bottom: 0 }
+          },
+          xaxis: {
+            type: "datetime",
+            labels: {
+              datetimeUTC: false,
+              style: { colors: "rgba(255,255,255,0.88)", fontSize: "17px", fontWeight: 600 }
+            },
+            axisBorder: { color: "rgba(255,255,255,0.12)" },
+            axisTicks: { color: "rgba(255,255,255,0.12)" }
+          },
+          yaxis: {
+            tooltip: { enabled: true },
+            forceNiceScale: true,
+            labels: {
+              style: { colors: "rgba(255,255,255,0.88)", fontSize: "17px", fontWeight: 600 },
+              formatter: v => (v === null || v === undefined)
+                ? "" : "$" + (v / 1000).toFixed(0) + "k"
+            }
+          },
+          tooltip: {
+            theme: "dark",
+            style: { fontSize: "15px" },
+            x: { format: "dd MMM yyyy" }
+          }
+        });
+        el.__chart.render();
+      };
+    }
+
+    const payload = JSON.stringify(pts).replace(/"/g, "&quot;");
+    return '<div style="width:100%;height:100%;position:relative;">'
+      + '<div class="rr-candles" data-pts="' + payload + '" '
+      + 'style="width:100%;height:100%;"></div>'
+      + '<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" '
+      + 'style="display:none" onload="window.__rrRenderCandles(this)">'
+      + '</div>';
+  ]]]

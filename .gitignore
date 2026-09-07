@@ -1,0 +1,95 @@
+# =============================================================================
+# WHITELIST .gitignore  --  deny by default
+#
+# Line 1 ignores EVERYTHING. Files are then added back one at a time below.
+# This is deliberate: a blacklist has to anticipate every secret, and any new
+# file dropped into /config would be committed by default. Here a new file is
+# invisible to git until someone deliberately un-ignores it, so a token or a
+# password cannot land in the repo by accident.
+#
+# /config holds live secrets: secrets.yaml, .storage/ (auth tokens, refresh
+# tokens, OAuth credentials, API keys for every integration), the recorder
+# database, Alexa cookies and TTS caches. None of it is whitelisted.
+# =============================================================================
+*
+
+!.gitignore
+
+# ---- documentation ----------------------------------------------------------
+!README.md
+!docs/
+!docs/**
+
+# ---- core Home Assistant config ---------------------------------------------
+# Safe to publish: every credential is a !secret reference, verified by scan.
+!configuration.yaml
+!automations.yaml
+!scripts.yaml
+!groups.yaml
+!customize.yaml
+!known_devices.yaml
+
+# ---- bedside dashboard (iPhone kiosk) ---------------------------------------
+!bedside.yaml
+!themes/
+!themes/bedside/
+!themes/bedside/*.yaml
+
+# ---- View Assist custom assets ----------------------------------------------
+# Only our own files. The upstream views are managed by the View Assist
+# updater and would be overwritten anyway, so they are not tracked.
+!view_assist/
+!view_assist/views/
+!view_assist/views/stocks/
+!view_assist/views/stocks/stocks.yaml
+!view_assist/views/stocks/chart_home.apex.yaml
+!view_assist/views/stocks/chart_home.buttoncard.yaml
+!view_assist/views/stocks/chart_home.candles.yaml
+!view_assist/dashboard/
+!view_assist/dashboard/user_dashboard.yaml
+
+# ---- operational scripts ----------------------------------------------------
+!disk_report.sh
+!cleanup.sh
+!echo_net_watch.sh
+
+# ---- secrets template (placeholder values only) -----------------------------
+!secrets.yaml.example
+
+# =============================================================================
+# Belt and braces. These are already covered by "*", but restated so that an
+# accidental "!" rule above can never expose them.
+# =============================================================================
+secrets.yaml
+.storage/
+.cloud/
+.ssh/
+.cache/
+deps/
+tts/
+www/community/
+custom_components/
+config_backups/
+node-red/
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.log.*
+*.bak
+*.bak-*
+*.pickle
+*.cookies
+*.token
+*.conf
+*.pem
+*.key
+*.crt
+*.pub
+id_*
+options.xml
+zwcfg_*.xml
+cameraURLs.txt
+go2rtc.yaml
+life360.conf
+.HA_VERSION

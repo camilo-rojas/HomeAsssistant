@@ -1,0 +1,401 @@
+# Bedside dashboard - IBM iPhone bedstand (iPhone 15, 852x393 landscape, iOS kiosk).
+#
+# v5:
+#   - light chips pulled up directly under the status row (they were floating
+#     mid-column because the row was centring them)
+#   - Cuarto is now an icon-only bed chip; Camaras icon-only too
+#   - chip font/height reduced so all four lights sit on one line
+#   - new "Ben" chip opens the Assist dialog
+#   - market block split into its own tappable area -> market subview with the
+#     daily performance graph
+#
+# kiosk_mode requires NemesisRE/kiosk-mode from HACS (the original maykar repo
+# was archived in 2022). v14.0.0+ is the build for HA 2026.6 and later. Until it
+# is installed this block is simply ignored - it does not break anything.
+kiosk_mode:
+  hide_header: true
+  hide_sidebar: true
+
+views:
+  - title: Bedside
+    path: home
+    type: panel
+    theme: bedside_black
+    cards:
+      - type: custom:layout-card
+        layout_type: custom:grid-layout
+        layout:
+          grid-template-columns: 58% 42%
+          grid-template-rows: 22% 40% 38%
+          grid-template-areas: |
+            "clock top"
+            "clock lights"
+            "market lights"
+          height: 100vh
+          margin: 0px
+          padding: 0px
+          gap: 0px
+          background: '#000000'
+        cards:
+          # ---- LEFT TOP: clock / date / weather -------------------------------
+          - type: custom:button-card
+            view_layout: {grid-area: clock}
+            triggers_update:
+              - sensor.time_date
+              - weather.forecast_home
+              - binary_sensor.tenis_ok
+              - input_boolean.bedside_night_mode
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: false
+            tap_action: {action: none}
+            styles:
+              card:
+                - background: '#000000'
+                - border: none
+                - box-shadow: none
+                - border-radius: 0px
+                - padding: 0px
+                - margin: 0px
+              grid:
+                - grid-template-areas: '"stack"'
+                - grid-template-columns: 1fr
+                - grid-template-rows: 1fr
+              custom_fields:
+                stack: [{width: 100%}, {height: 100%}]
+            custom_fields:
+              stack: |
+                [[[
+                  const night = states['input_boolean.bedside_night_mode']
+                    && states['input_boolean.bedside_night_mode'].state === 'on';
+                  const fg  = night ? '#8B1A1A' : '#FFFFFF';
+                  const dim = night ? '#5A1010' : 'rgba(255,255,255,0.62)';
+                  const now = new Date();
+                  const hh = now.toLocaleTimeString('en-US',
+                    { hour: 'numeric', minute: '2-digit', hour12: true });
+                  const p = hh.split(' ');
+                  let date = now.toLocaleDateString('es-ES',
+                    { weekday: 'long', day: 'numeric', month: 'long' });
+                  date = date.charAt(0).toUpperCase() + date.slice(1);
+                  const ICON = {
+                    'clear-night':'weather-night','cloudy':'weather-cloudy',
+                    'exceptional':'alert-circle-outline','fog':'weather-fog',
+                    'hail':'weather-hail','lightning':'weather-lightning',
+                    'lightning-rainy':'weather-lightning-rainy',
+                    'partlycloudy':'weather-partly-cloudy','pouring':'weather-pouring',
+                    'rainy':'weather-rainy','snowy':'weather-snowy',
+                    'snowy-rainy':'weather-snowy-rainy','sunny':'weather-sunny',
+                    'windy':'weather-windy','windy-variant':'weather-windy-variant'
+                  };
+                  const w = states['weather.forecast_home'];
+                  const cond = w ? w.state : 'exceptional';
+                  const temp = (w && w.attributes.temperature != null)
+                    ? Math.round(w.attributes.temperature) : '--';
+                  const t = states['binary_sensor.tenis_ok'];
+                  const ball = (!night && t && t.state === 'on')
+                    ? `<ha-icon icon="mdi:tennis-ball" style="--mdc-icon-size:32px;color:#DFFF4F;margin-left:16px;"></ha-icon>` : '';
+                  return `
+                    <div style="display:flex;flex-direction:column;align-items:flex-start;
+                                justify-content:flex-end;width:100%;height:100%;
+                                box-sizing:border-box;padding:0 6px 0 4px;">
+                      <div style="display:flex;align-items:baseline;color:${fg};
+                                  line-height:0.92;white-space:nowrap;">
+                        <span style="font-size:122px;font-weight:300;letter-spacing:-4px;">${p[0]}</span>
+                        <span style="font-size:40px;margin-left:12px;">${(p[1]||'').toLowerCase()}</span>
+                      </div>
+                      <div style="font-size:25px;color:${dim};margin-top:10px;white-space:nowrap;">${date}</div>
+                      <div style="display:flex;align-items:center;color:${fg};font-size:30px;
+                                  margin-top:12px;white-space:nowrap;">
+                        <ha-icon icon="mdi:${ICON[cond]||'weather-cloudy'}" style="--mdc-icon-size:36px;margin-right:12px;"></ha-icon>
+                        ${temp}&deg;${ball}
+                      </div>
+                    </div>`;
+                ]]]
+
+          # ---- LEFT BOTTOM: market, tappable -> detail view --------------------
+          - type: custom:button-card
+            view_layout: {grid-area: market}
+            triggers_update:
+              - sensor.robotray_daily_pnl_2
+              - sensor.robotray_net_liquidation
+              - input_boolean.bedside_night_mode
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: false
+            tap_action:
+              action: navigate
+              navigation_path: /bedside-clock/mercado
+            styles:
+              card:
+                - background: '#000000'
+                - border: none
+                - box-shadow: none
+                - border-radius: 0px
+                - padding: 0px
+              grid:
+                - grid-template-areas: '"m"'
+                - grid-template-columns: 1fr
+                - grid-template-rows: 1fr
+              custom_fields:
+                m: [{width: 100%}, {height: 100%}]
+            custom_fields:
+              m: |
+                [[[
+                  const night = states['input_boolean.bedside_night_mode']
+                    && states['input_boolean.bedside_night_mode'].state === 'on';
+                  const dim = night ? '#5A1010' : 'rgba(255,255,255,0.62)';
+                  const num = (id) => {
+                    const s = states[id];
+                    if (!s || s.state === 'unknown' || s.state === 'unavailable') return null;
+                    const v = parseFloat(s.state); return isNaN(v) ? null : v;
+                  };
+                  const pnl = num('sensor.robotray_daily_pnl_2');
+                  const pct = num('sensor.robotray_daily_pnl_percent');
+                  const nl  = num('sensor.robotray_net_liquidation');
+                  const money = (v) => v === null ? '--'
+                    : v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+                  const up = pnl !== null && pnl > 0;
+                  const col = night ? '#8B1A1A'
+                    : (pnl === null || pnl === 0 ? dim : (up ? '#2ECC71' : '#E74C3C'));
+                  const arrow = pnl === null || pnl === 0 ? '' : (up ? '▲' : '▼');
+                  const txt = pnl === null ? '--'
+                    : (up ? '+$' : '-$') + money(Math.abs(pnl))
+                      + (pct === null ? '' : '   ' + (pct > 0 ? '+' : '') + pct + '%');
+                  return `
+                    <div style="display:flex;flex-direction:column;align-items:flex-start;
+                                justify-content:flex-start;width:100%;height:100%;
+                                box-sizing:border-box;padding:8px 6px 0 4px;">
+                      <div style="font-size:34px;font-weight:500;color:${col};white-space:nowrap;">
+                        ${arrow} ${txt}</div>
+                      <div style="font-size:22px;color:${dim};margin-top:4px;white-space:nowrap;">
+                        $${money(nl)}</div>
+                    </div>`;
+                ]]]
+
+          # ---- TOP RIGHT: status chips (icon-only where the icon is obvious) --
+          - type: custom:mushroom-chips-card
+            view_layout: {grid-area: top}
+            alignment: center
+            chips:
+              - type: template
+                entity: climate.my_ecobee
+                icon: mdi:thermostat
+                content: >-
+                  {{ state_attr('climate.my_ecobee','current_temperature') | round(0) }}°
+                icon_color: >-
+                  {{ 'red' if is_state('input_boolean.bedside_night_mode','on') else 'orange' }}
+                tap_action: {action: more-info}
+              - type: template
+                icon: mdi:cctv
+                icon_color: >-
+                  {{ 'red' if is_state('input_boolean.bedside_night_mode','on') else 'cyan' }}
+                tap_action:
+                  action: navigate
+                  navigation_path: /bedside-clock/cameras
+              - type: template
+                icon: mdi:robot-happy-outline
+                content: Ben
+                icon_color: >-
+                  {{ 'red' if is_state('input_boolean.bedside_night_mode','on') else 'purple' }}
+                tap_action:
+                  action: assist
+                  pipeline_id: last_used
+                  start_listening: true
+              - type: template
+                entity: input_boolean.bedside_night_mode
+                icon: >-
+                  {{ 'mdi:white-balance-sunny' if is_state('input_boolean.bedside_night_mode','on')
+                     else 'mdi:moon-waning-crescent' }}
+                icon_color: >-
+                  {{ 'red' if is_state('input_boolean.bedside_night_mode','on') else 'blue-grey' }}
+                tap_action: {action: toggle}
+            card_mod: &chips
+              style: |
+                ha-card {
+                  background: transparent !important;
+                  border: none !important; box-shadow: none !important;
+                  --chip-height: 44px;
+                  --chip-border-radius: 22px;
+                  --chip-font-size: 15px;
+                  --chip-icon-size: 20px;
+                  --chip-spacing: 5px;
+                  {% if is_state('input_boolean.bedside_night_mode','on') %}
+                  --chip-background: rgba(139,26,26,0.14);
+                  --primary-text-color: #8B1A1A;
+                  {% else %}
+                  --chip-background: rgba(255,255,255,0.07);
+                  --primary-text-color: #FFFFFF;
+                  {% endif %}
+                }
+                mushroom-chips-card {
+                  display: flex; align-items: center; justify-content: center;
+                  height: 100%; flex-wrap: nowrap;
+                }
+
+          # ---- LIGHT CHIPS: pinned to the top of their row, one line ----------
+          - type: custom:mushroom-chips-card
+            view_layout: {grid-area: lights}
+            alignment: center
+            chips:
+              - type: template
+                entity: light.cuarto_principal
+                icon: mdi:bed
+                icon_color: >-
+                  {% if is_state('input_boolean.bedside_night_mode','on') %}red
+                  {% elif is_state('light.cuarto_principal','on') %}amber
+                  {% else %}grey{% endif %}
+                tap_action: {action: toggle}
+                double_tap_action: {action: more-info}
+              - type: template
+                entity: light.cuarto_luz_camilo
+                icon: mdi:lamp
+                content: Camilo
+                icon_color: >-
+                  {% if is_state('input_boolean.bedside_night_mode','on') %}red
+                  {% elif is_state('light.cuarto_luz_camilo','on') %}amber
+                  {% else %}grey{% endif %}
+                tap_action: {action: toggle}
+                double_tap_action: {action: more-info}
+              - type: template
+                entity: light.cuarto_luz_nati
+                icon: mdi:lamp
+                content: Nati
+                icon_color: >-
+                  {% if is_state('input_boolean.bedside_night_mode','on') %}red
+                  {% elif is_state('light.cuarto_luz_nati','on') %}amber
+                  {% else %}grey{% endif %}
+                tap_action: {action: toggle}
+                double_tap_action: {action: more-info}
+              - type: template
+                entity: light.cuarto_lampara
+                icon: mdi:floor-lamp
+                content: Lámpara
+                icon_color: >-
+                  {% if is_state('input_boolean.bedside_night_mode','on') %}red
+                  {% elif is_state('light.cuarto_lampara','on') %}amber
+                  {% else %}grey{% endif %}
+                tap_action: {action: toggle}
+                double_tap_action: {action: more-info}
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent !important;
+                  border: none !important; box-shadow: none !important;
+                  --chip-height: 44px;
+                  --chip-border-radius: 22px;
+                  --chip-font-size: 15px;
+                  --chip-icon-size: 20px;
+                  --chip-spacing: 5px;
+                  {% if is_state('input_boolean.bedside_night_mode','on') %}
+                  --chip-background: rgba(139,26,26,0.14);
+                  --primary-text-color: #8B1A1A;
+                  {% else %}
+                  --chip-background: rgba(255,255,255,0.07);
+                  --primary-text-color: #FFFFFF;
+                  {% endif %}
+                }
+                /* flex-start pins the row to the top of its grid area - centring
+                   is what pushed the lights into the middle of the column */
+                mushroom-chips-card {
+                  display: flex; align-items: flex-start; justify-content: center;
+                  height: 100%; flex-wrap: nowrap; padding-top: 6px;
+                }
+
+  # =========================================================================
+  - title: Mercado
+    path: mercado
+    type: panel
+    subview: true
+    theme: bedside_black
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-chips-card
+            alignment: start
+            chips:
+              - type: template
+                icon: mdi:arrow-left
+                content: Volver
+                tap_action:
+                  action: navigate
+                  navigation_path: /bedside-clock/home
+            card_mod:
+              style: |
+                ha-card { background: transparent !important; border: none !important;
+                          box-shadow: none !important; --chip-height: 40px;
+                          --chip-background: rgba(255,255,255,0.07); }
+          - type: glance
+            columns: 4
+            show_name: true
+            show_state: true
+            entities:
+              - {entity: sensor.robotray_net_liquidation, name: Net Liq}
+              - {entity: sensor.robotray_daily_pnl_2, name: Daily P&L}
+              - {entity: sensor.robotray_unrealized_pnl, name: Unrealized}
+              - {entity: sensor.robotray_cash, name: Cash}
+            card_mod:
+              style: |
+                ha-card { background: #000000 !important; border: none !important;
+                          box-shadow: none !important; }
+                ha-card .name { font-size: 15px !important; }
+                ha-card .state { font-size: 21px !important; font-weight: 500 !important; }
+          # Daily performance. Uses long-term statistics so the line survives the
+          # 10-day recorder purge, unlike a plain history graph.
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            header:
+              show: true
+              title: Hoy
+              show_states: true
+              colorize_states: true
+            series:
+              - entity: sensor.robotray_net_liquidation
+                name: Net Liquidation
+                type: area
+                stroke_width: 2
+                opacity: 0.25
+                color: '#2ECC71'
+                group_by:
+                  func: last
+                  duration: 15min
+            apex_config:
+              chart: {height: 210, background: transparent, toolbar: {show: false},
+                      animations: {enabled: false}}
+              dataLabels: {enabled: false}
+              grid: {borderColor: 'rgba(255,255,255,0.10)', strokeDashArray: 3}
+              xaxis: {labels: {style: {colors: 'rgba(255,255,255,0.70)', fontSize: '13px'},
+                      datetimeUTC: false}}
+              yaxis: {labels: {style: {colors: 'rgba(255,255,255,0.70)', fontSize: '13px'}}}
+              tooltip: {theme: dark}
+            card_mod:
+              style: |
+                ha-card { background: #000000 !important; border: none !important;
+                          box-shadow: none !important; }
+
+  # =========================================================================
+  - title: Cámaras
+    path: cameras
+    type: panel
+    subview: true
+    theme: bedside_black
+    cards:
+      - type: custom:layout-card
+        layout_type: custom:grid-layout
+        layout:
+          grid-template-columns: 50% 50%
+          grid-template-rows: 50% 50%
+          grid-template-areas: |
+            "c1 c2"
+            "c3 c4"
+          height: 100vh
+          margin: 0px
+          padding: 2px
+          gap: 2px
+          background: '#000000'
+        cards:
+          - {type: picture-entity, view_layout: {grid-area: c1}, entity: camera.sala, camera_view: live, show_state: false, name: Sala}
+          - {type: picture-entity, view_layout: {grid-area: c2}, entity: camera.entrada, camera_view: live, show_state: false, name: Entrada}
+          - {type: picture-entity, view_layout: {grid-area: c3}, entity: camera.hall, camera_view: live, show_state: false, name: Hall}
+          - {type: picture-entity, view_layout: {grid-area: c4}, entity: camera.cocina, camera_view: live, show_state: false, name: Cocina}

@@ -1,0 +1,388 @@
+# View Assist - Stocks / portfolio view (custom, not in the upstream repo, so
+# the View Assist updater will never overwrite or remove it).
+#
+# 30/70 split like the clock view.
+#   person.camilo home  -> RobotRay portfolio stats + portfolio value graph
+#   person.camilo away  -> Yahoo Finance quotes + Finviz chart
+#
+# Apply with:
+#   action: view_assist.load_asset
+#   data: {asset_class: views, name: stocks, download_from_repo: false}
+type: custom:button-card
+variables:
+  stockscardversion: 3.2.0
+  var_finviz_symbol: COIN
+  var_camilo_home: >-
+    [[[ try { return hass.states["person.camilo"].state === "home"; }
+    catch { return false; } ]]]
+  # Yahoo Finance tickers shown when nobody is home.
+  var_market_entities: |-
+    [[[
+      return [
+        { entity: "sensor.yahoofinance_qqq",     label: "QQQ" },
+        { entity: "sensor.yahoofinance_btc_usd", label: "Bitcoin" },
+        { entity: "sensor.yahoofinance_eth_usd", label: "Ethereum" },
+        { entity: "sensor.yahoofinance_coin",    label: "COIN" },
+        { entity: "sensor.yahoofinance_crm",     label: "CRM" },
+        { entity: "sensor.yahoofinance_cop_x",   label: "USD/COP" }
+      ];
+    ]]]
+template:
+  - variable_template
+  - responsive_base
+  - body_template
+styles:
+  grid:
+    # The two chart panels are positioned absolutely over the right-hand 70%
+    # (see custom_fields styles) so only one needs to be visible at a time.
+    - grid-template-areas: |
+        "stats status"
+    - grid-template-columns: 30% 70%
+    - grid-template-rows: 100vh
+    - row-gap: 0
+    - column-gap: 0
+  card:
+    - background-color: black
+    - background-image: none
+    - position: relative
+    - padding: 0
+    - overflow: hidden
+  custom_fields:
+    title:
+      - display: none
+    stats:
+      - display: block
+      - width: 100%
+      - height: 100%
+      - padding: 1vh 0.4rem 1vh 0.4rem
+      - box-sizing: border-box
+      - overflow-y: auto
+      - background-color: rgba(0, 0, 0, 0.92)
+      - border-right: 1px solid rgba(255, 255, 255, 0.12)
+      - z-index: 2
+    chart_home:
+      - display: '[[[ return variables.var_camilo_home ? "block" : "none" ]]]'
+      - position: absolute
+      - left: 30%
+      - right: 0
+      - top: 0
+      - bottom: 0
+      # top right bottom left - weighted to top and left so the card is not
+      # jammed against the stats column or the top edge.
+      - padding: 3.6vh 1vw 1.2vh 1.8vw
+      - box-sizing: border-box
+      - background-color: black
+      - z-index: 1
+    chart_away:
+      - display: '[[[ return variables.var_camilo_home ? "none" : "flex" ]]]'
+      - position: absolute
+      - left: 30%
+      - right: 0
+      - top: 0
+      - bottom: 0
+      - align-items: center
+      - justify-content: center
+      - padding: 0.4rem
+      - box-sizing: border-box
+      - background-color: black
+      - z-index: 1
+custom_fields:
+  title: ''
+  stats:
+    card:
+      type: grid
+      columns: 1
+      square: false
+      cards: |-
+        [[[
+          const va   = variables.var_assistsat_entity;
+          const home = variables.var_camilo_home;
+
+          const num = (id) => {
+            const s = hass.states[id];
+            if (!s || s.state === "unknown" || s.state === "unavailable") return null;
+            const v = parseFloat(s.state);
+            return isNaN(v) ? null : v;
+          };
+          // sensor.robotray_daily_pnl is an orphaned template entity; the live
+          // REST one landed on ..._2. Try both so this works either way.
+          const numAny = (...ids) => {
+            for (const id of ids) { const v = num(id); if (v !== null) return v; }
+            return null;
+          };
+          const money = (v, dp) => v === null ? "--"
+            : v.toLocaleString("en-US", {minimumFractionDigits: dp, maximumFractionDigits: dp});
+
+          // Solid triangle, rotated 180deg for down. mdi:triangle is guaranteed
+          // to exist; a "triangle-down" variant is not, across MDI versions.
+          // Unicode glyphs, rendered inline with the number. Grid-track
+          // centring never took (button-card auto-places its own elements into
+          // implicit columns), so the triangle now lives inside the same text
+          // run as the value: it centres, baselines and spaces automatically.
+          const dir = (v) => {
+            if (v === null || v === 0) return { char: "\u2014", color: "#7A7A7A" };
+            return v > 0
+              ? { char: "\u25B2", color: "#2ECC71" }
+              : { char: "\u25BC", color: "#E74C3C" };
+          };
+
+          // Label sits above the value now, so the value gets nearly the whole
+          // column width and can run much larger.
+          const fit = (t, big) => big
+            ? (t.length <= 9 ? "5.6vh" : t.length <= 13 ? "4.6vh" : "3.9vh")
+            : (t.length <= 9 ? "3.8vh" : t.length <= 13 ? "3.2vh" : "2.8vh");
+
+          // Everything lives in ONE custom field whose HTML we own outright.
+          // button-card kept auto-placing its own elements into implicit grid
+          // columns, which is what pushed the value off-centre no matter what
+          // justify-* we set. With show_icon/name/label/state all false there is
+          // exactly one grid item, and an inner flexbox does the centring and
+          // the label/value spacing with no interference.
+          const row = (label, valueText, d, h, labelFont, big) => {
+            const triSize = big ? "0.70em" : "0.76em";
+            const tri = d
+              ? '&nbsp;&nbsp;<span style="color:' + d.color + ';font-size:' + triSize + '">' + d.char + '</span>'
+              : "";
+            const html =
+              '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+              'width:100%;height:100%;box-sizing:border-box;">' +
+                '<div style="font-size:' + labelFont + ';color:rgba(255,255,255,0.75);' +
+                'letter-spacing:0.06em;text-transform:uppercase;line-height:1;white-space:nowrap;">' +
+                label + '</div>' +
+                '<div style="font-size:' + fit(valueText, big) + ';font-weight:600;color:#ffffff;' +
+                'line-height:1;margin-top:0.4vh;white-space:nowrap;">' + valueText + tri + '</div>' +
+              '</div>';
+            return {
+              type: "custom:button-card",
+              template: null,
+              show_icon: false,
+              show_name: false,
+              show_label: false,
+              show_state: false,
+              custom_fields: { cell: html },
+              styles: {
+                card: [
+                  { background: "rgba(255,255,255,0.05)" },
+                  { border: "none" },
+                  { "border-radius": "0.5rem" },
+                  { "box-shadow": "none" },
+                  { height: h },
+                  { width: "28vw" },
+                  { "box-sizing": "border-box" },
+                  { padding: "0" }
+                ],
+                grid: [
+                  { "grid-template-areas": '"cell"' },
+                  { "grid-template-columns": "1fr" },
+                  { "grid-template-rows": "1fr" }
+                ],
+                custom_fields: {
+                  cell: [{ width: "100%" }, { height: "100%" }, { "justify-self": "stretch" }]
+                }
+              },
+              tap_action: { action: "none" }
+            };
+          };
+
+          const back = {
+            type: "custom:button-card",
+            template: null,
+            icon: "mdi:arrow-left",
+            name: home ? "Portafolio" : "Mercados",
+            show_icon: true,
+            show_name: true,
+            styles: {
+              card: [
+                { background: "rgba(255,255,255,0.10)" },
+                { border: "none" },
+                { "border-radius": "1.4rem" },
+                { "box-shadow": "none" },
+                { height: "8vh" },
+                { width: "28vw" },
+                { "box-sizing": "border-box" },
+                { padding: "0 0.4rem" }
+              ],
+              grid: [
+                { "grid-template-areas": '"i n"' },
+                { "grid-template-columns": "min-content 1fr" },
+                { "align-items": "center" },
+                { "justify-items": "start" }
+              ],
+              img_cell: [{ "min-width": "2.6rem" }, { overflow: "visible" }],
+              icon: [{ color: "white" }, { width: "3vh" }],
+              name: [
+                { color: "white" },
+                { "font-size": "3vh" },
+                { "text-align": "left" },
+                { "white-space": "nowrap" }
+              ]
+            },
+            tap_action: {
+              action: "call-service",
+              service: "view_assist.navigate",
+              service_data: { device: va, path: "home" }
+            }
+          };
+
+          if (home) {
+            const netliq = num("sensor.robotray_net_liquidation");
+            const cash   = num("sensor.robotray_cash");
+            const daily  = numAny("sensor.robotray_daily_pnl", "sensor.robotray_daily_pnl_2");
+            let dpct     = numAny("sensor.robotray_daily_pnl_percent", "sensor.robotray_daily_pnl_percent_2");
+            // The percent template sensor depends on the orphaned
+            // sensor.robotray_daily_pnl and may be unavailable. Derive it here
+            // instead so the view never depends on that entity resolving.
+            if (dpct === null && daily !== null && netliq) dpct = (daily / netliq) * 100;
+            const unrl   = num("sensor.robotray_unrealized_pnl");
+
+            // Balances carry no sign of their own, so their triangle shows the
+            // direction the book moved today (the sign of daily_pnl).
+            const bookDir = dir(daily);
+
+            // Nominal dollars then percent, on one line.
+            const dailyTxt = daily === null ? "--"
+              : (daily > 0 ? "+$" : daily < 0 ? "-$" : "$") + money(Math.abs(daily), 0)
+                + (dpct === null ? "" : " " + (dpct > 0 ? "+" : "") + dpct.toFixed(1) + "%");
+
+            const H = "20vh", LF = "4.2vh";
+            return [
+              back,
+              row("Net Liq.",   "$" + money(netliq, 0), bookDir,    H, LF, true),
+              row("Cash",       "$" + money(cash, 0),   bookDir,    H, LF, true),
+              row("Daily P&L",  dailyTxt,               dir(daily), H, LF, true),
+              row("Unrealized", "$" + money(unrl, 0),   dir(unrl),  H, LF, true)
+            ];
+          }
+
+          const rows = [back];
+          variables.var_market_entities.forEach(m => {
+            const s = hass.states[m.entity];
+            if (!s) { rows.push(row(m.label, "--", null, "13vh", "3vh", false)); return; }
+            const price = parseFloat(s.state);
+            const pct   = parseFloat(s.attributes.regularMarketChangePercent);
+            const cur   = s.attributes.currencySymbol || "$";
+            const dp    = price >= 1000 ? 0 : 2;
+            const txt   = isNaN(price) ? "--"
+              : cur + price.toLocaleString("en-US", {minimumFractionDigits: dp, maximumFractionDigits: dp})
+                + (isNaN(pct) ? "" : " " + (pct > 0 ? "+" : "") + pct.toFixed(1) + "%");
+            rows.push(row(m.label, txt, dir(isNaN(pct) ? null : pct), "13vh", "3vh", false));
+          });
+          return rows;
+        ]]]
+  chart_home: |-
+    [[[
+      const ENTITY = "sensor.robotray_ohlc";
+      const s = hass.states[ENTITY];
+      const rows = (s && s.attributes && s.attributes.data) || [];
+  
+      // Drop synthetic periods (samples==1 -> open==high==low==close). They
+      // render as flat ticks and only add noise. Weekends are flat for the
+      // same reason but arrive non-synthetic, so filter zero-range too.
+      const pts = rows
+        .filter(d => d.synthetic !== true)
+        .filter(d => !(d.open === d.high && d.high === d.low && d.low === d.close))
+        // Weekend guard. With interval=weekly every period_start is a Monday so
+        // this is a no-op, but it keeps Sat/Sun candles out if the secret is
+        // ever switched to interval=daily - markets are shut, so those periods
+        // carry no range and would only add gaps.
+        .filter(d => { const w = new Date(d.period_start + "T00:00:00").getDay(); return w !== 0 && w !== 6; })
+        .map(d => ({
+          x: new Date(d.period_start + "T00:00:00").getTime(),
+          y: [d.open, d.high, d.low, d.close]
+        }))
+        .sort((a, b) => a.x - b.x);
+  
+      // Defined once on window; the onload handler below just calls it.
+      if (!window.__rrRenderCandles) {
+        window.__rrRenderCandles = function (img, tries) {
+          tries = tries || 0;
+          const host = img.parentElement;
+          if (!host) return;
+          const el = host.querySelector(".rr-candles");
+          if (!el) return;
+  
+          // apexcharts-card's bundle may not have executed yet on a cold load.
+          if (typeof ApexCharts === "undefined") {
+            if (tries < 40) setTimeout(() => window.__rrRenderCandles(img, tries + 1), 150);
+            return;
+          }
+  
+          const data = JSON.parse(el.dataset.pts || "[]");
+          if (el.__chart) { try { el.__chart.destroy(); } catch (e) {} el.__chart = null; }
+          if (!data.length) {
+            el.innerHTML = '<div style="color:rgba(255,255,255,0.5);font-size:2vh;'
+              + 'display:flex;align-items:center;justify-content:center;height:100%;">'
+              + 'No candles yet</div>';
+            return;
+          }
+  
+          el.__chart = new ApexCharts(el, {
+            chart: {
+              type: "candlestick",
+              height: "100%",
+              background: "transparent",
+              toolbar: { show: false },
+              zoom: { enabled: false },
+              animations: { enabled: false },
+              fontFamily: "inherit"
+            },
+            theme: { mode: "dark" },
+            series: [{ name: "Net Liquidation", data: data }],
+            plotOptions: {
+              candlestick: {
+                colors: { upward: "#22C55E", downward: "#E74C3C" },
+                wick: { useFillColor: true }
+              }
+            },
+            grid: {
+              borderColor: "rgba(255,255,255,0.10)",
+              strokeDashArray: 3,
+              padding: { left: 12, right: 8, top: 0, bottom: 0 }
+            },
+            xaxis: {
+              type: "datetime",
+              labels: {
+                datetimeUTC: false,
+                style: { colors: "rgba(255,255,255,0.88)", fontSize: "17px", fontWeight: 600 }
+              },
+              axisBorder: { color: "rgba(255,255,255,0.12)" },
+              axisTicks: { color: "rgba(255,255,255,0.12)" }
+            },
+            yaxis: {
+              tooltip: { enabled: true },
+              forceNiceScale: true,
+              labels: {
+                style: { colors: "rgba(255,255,255,0.88)", fontSize: "17px", fontWeight: 600 },
+                formatter: v => (v === null || v === undefined)
+                  ? "" : "$" + (v / 1000).toFixed(0) + "k"
+              }
+            },
+            tooltip: {
+              theme: "dark",
+              style: { fontSize: "15px" },
+              x: { format: "dd MMM yyyy" }
+            }
+          });
+          el.__chart.render();
+        };
+      }
+  
+      const payload = JSON.stringify(pts).replace(/"/g, "&quot;");
+      return '<div style="width:100%;height:100%;position:relative;">'
+        + '<div class="rr-candles" data-pts="' + payload + '" '
+        + 'style="width:100%;height:100%;"></div>'
+        + '<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" '
+        + 'style="display:none" onload="window.__rrRenderCandles(this)">'
+        + '</div>';
+    ]]]
+  # Finviz has no dark theme (verified: theme/dark/bg params are all ignored and
+  # return byte-identical PNGs), so the light chart is inverted in CSS.
+  # invert(1) flips the white background to black; hue-rotate(180deg) puts the
+  # hues back so green candles stay green and red stay red.
+  chart_away: |-
+    [[[
+      const sym = variables.var_finviz_symbol || "COIN";
+      const bust = Math.floor(Date.now() / 300000);
+      const url = `https://charts2.finviz.com/chart.ashx?t=${sym}&ty=c&ta=1&p=d&s=l&_cb=${bust}`;
+      return `<img src="${url}" style="width:100%;height:auto;max-height:100%;object-fit:contain;border-radius:0.5rem;filter:invert(1) hue-rotate(180deg);">`;
+    ]]]

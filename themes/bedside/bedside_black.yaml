@@ -1,0 +1,34 @@
+# Pure-black theme for the bedside clock.
+#
+# The grey was never the cards - it is Home Assistant's default dark theme:
+#   --primary-background-color: #111111   (shows through the grid gaps)
+#   --card-background-color:    #1c1c1c   (the tile backgrounds)
+# Overriding ha-card in card_mod fights specificity per card and still leaves
+# the view background grey. Setting the variables at the theme level fixes both
+# at the source, for every card, including ones added later.
+bedside_black:
+  # backgrounds - all pure black
+  primary-background-color: "#000000"
+  secondary-background-color: "#000000"
+  card-background-color: "#000000"
+  ha-card-background: "#000000"
+  app-header-background-color: "#000000"
+  app-header-text-color: "#000000"
+  sidebar-background-color: "#000000"
+  table-row-background-color: "#000000"
+  table-row-alternative-background-color: "#000000"
+  # no card chrome at all
+  ha-card-border-width: "0px"
+  ha-card-border-color: "#000000"
+  ha-card-box-shadow: "none"
+  ha-card-border-radius: "18px"
+  divider-color: "#000000"
+  # text
+  primary-text-color: "#FFFFFF"
+  secondary-text-color: "rgba(255,255,255,0.60)"
+  disabled-text-color: "rgba(255,255,255,0.30)"
+  # mushroom chip surfaces - these have their own variables and would otherwise
+  # stay grey even with card-background-color black
+  mush-rgb-card-background: "0, 0, 0"
+  chip-background: "rgba(255,255,255,0.06)"
+  ha-chip-background-color: "rgba(255,255,255,0.06)"

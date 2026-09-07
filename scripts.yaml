@@ -1,0 +1,420 @@
+timed_rose_lamp:
+  alias: Turn on rose room lamp and set timer
+  sequence:
+  - service: script.turn_off
+    data:
+      entity_id: script.timer_off_rose
+  - service: light.turn_on
+    data:
+      entity_id: light.hue_white_lamp_1
+      brightness: 30
+  - service: script.turn_on
+    data:
+      entity_id: script.timer_off_rose
+timer_off_rose:
+  alias: Turn off rose room lamp after 10 minutes
+  sequence:
+  - delay:
+      minutes: 10
+  - service: light.turn_off
+    data:
+      entity_id: light.hue_white_lamp_1
+timed_yellow_lamp:
+  alias: Turn on yellow room lamp and set timer
+  sequence:
+  - service: script.turn_off
+    data:
+      entity_id: script.timer_off_yellow
+  - service: light.turn_on
+    data:
+      entity_id: light.hue_white_lamp_2
+      brightness: 30
+  - service: script.turn_on
+    data:
+      entity_id: script.timer_off_yellow
+timer_off_yellow:
+  alias: Turn off yellow room lamp after 10 minutes
+  sequence:
+  - delay:
+      minutes: 10
+  - service: light.turn_off
+    data:
+      entity_id: light.hue_white_lamp_2
+testing_alexa:
+  alias: Salute
+  sequence:
+  - service: notify.alexa_media_estudio_echo
+    data:
+      message: hi
+      data:
+        type: tts
+  mode: single
+'1607011669745':
+  alias: Turn off Perfume 1 and 2 after 2 hours
+  sequence:
+  - delay:
+      hours: 2
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  - service: switch.turn_off
+    data: {}
+    target:
+      entity_id:
+      - switch.perfume_1
+      - switch.perfume_2
+  mode: single
+'1607011688577':
+  alias: Turn on Perfume 1 and 2, and set timer
+  sequence:
+  - service: script.turn_off
+    data:
+      entity_id: script.1607011669745
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id:
+      - switch.perfume_1
+  - service: script.turn_on
+    data:
+      entity_id: script.1607011669745
+  mode: single
+play_cam:
+  alias: Play Cam Estudio
+  sequence:
+  - data:
+      source: Estudio Echo
+    action: media_player.select_source
+    target:
+      entity_id: media_player.spotify_camilo
+  - data:
+      shuffle: true
+    action: media_player.shuffle_set
+    target:
+      entity_id: media_player.spotify_camilo
+  - data:
+      enqueue: replace
+      media:
+        media_content_id: https://open.spotify.com/playlist/6VFC9xjtPOOTCMEgt5LCKe?si=cdee31a0dd9b435e
+        media_content_type: playlist
+        metadata:
+          navigateIds:
+          - {}
+          - media_content_type: ''
+            media_content_id: __MANUAL_ENTRY__
+          browse_entity_id: media_player.spotify_camilo
+    action: media_player.play_media
+    target:
+      entity_id: media_player.spotify_camilo
+  mode: single
+  icon: mdi:music
+play_cam_sala:
+  alias: Play Cam Sala
+  sequence:
+  - service: media_player.select_source
+    target:
+      entity_id: media_player.spotify_camilo_rojas
+    data:
+      source: Sala Echo
+  - service: media_player.shuffle_set
+    target:
+      entity_id: media_player.spotify_camilo_rojas
+    data:
+      shuffle: true
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.spotify_camilo_rojas
+    data:
+      media_content_id: https://open.spotify.com/playlist/6VFC9xjtPOOTCMEgt5LCKe?si=cdee31a0dd9b435e
+      media_content_type: playlist
+      enqueue: replace
+  mode: single
+  icon: mdi:music
+turn_on_office_set_timer:
+  alias: Turn on office set timer
+  sequence:
+  - data: {}
+    target:
+      entity_id: script.turn_off_office_after_2_hours_duplicate
+    action: script.turn_off
+  - data: {}
+    target:
+      entity_id:
+      - switch.luz_estudio
+      - switch.tv_ada_switch
+    action: switch.turn_on
+  - action: light.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.hue_color_light_1
+  - data: {}
+    target:
+      entity_id: script.turn_off_office_after_2_hours_duplicate
+    action: script.turn_on
+  mode: single
+turn_off_office_after_2_hours_duplicate:
+  alias: Turn off office after 20 mins
+  sequence:
+  - delay:
+      hours: 0
+      minutes: 20
+      seconds: 0
+      milliseconds: 0
+  - data: {}
+    target:
+      entity_id:
+      - switch.luz_estudio
+      - switch.tv_ada_switch
+    action: switch.turn_off
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.hue_color_light_1
+  mode: single
+play_cam_cuarto:
+  alias: Play Cam Cuarto
+  sequence:
+  - data:
+      source: Echo Show de Camilo
+    action: media_player.select_source
+    target:
+      entity_id: media_player.spotify_camilo
+  - data:
+      shuffle: true
+    action: media_player.shuffle_set
+    target:
+      entity_id: media_player.spotify_camilo
+  - data:
+      enqueue: replace
+      media:
+        media_content_id: https://open.spotify.com/playlist/6VFC9xjtPOOTCMEgt5LCKe?si=cdee31a0dd9b435e
+        media_content_type: playlist
+        metadata:
+          navigateIds:
+          - {}
+          - media_content_type: ''
+            media_content_id: __MANUAL_ENTRY__
+          browse_entity_id: media_player.vaca_c0e88f32f_media_player
+    action: media_player.play_media
+    target:
+      entity_id: media_player.spotify_camilo
+  mode: single
+  icon: mdi:music
+message_food_is_ready:
+  alias: 'Message: Food is ready'
+  sequence:
+  - service: notify.ada_thinkpad
+    data:
+      message: La comida está lista por favor venir a la cocina !
+      title: Mensaje de papa
+      data:
+        type: tts
+  - service: notify.ana_hp
+    data:
+      message: La comida está lista por favor venir a la cocina !
+      title: Mensaje de papa
+  - service: tts.speak
+    data:
+      cache: true
+      media_player_entity_id: media_player.ada_thinkpad
+      message: Hey you !
+      language: es
+    target:
+      entity_id: tts.google_en_com
+  mode: single
+  icon: mdi:food-drumstick
+say_something:
+  alias: Say something
+  sequence:
+  - service: tts.speak
+    data:
+      cache: false
+      message: Hello, i'm here now !
+      media_player_entity_id: media_player.prometeo
+    target:
+      entity_id:
+      - tts.google_en_com
+  mode: single
+notify_prometeo:
+  alias: 'Notify: Prometeo'
+  sequence:
+  - service: notify.prometeo
+    data:
+      message: Hello im here
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.prometeo
+    data:
+      media_content_id: media-source://tts/tts.google_en_com?message=Hola%2C+como+vas+Camilo+%3F&language=es
+      media_content_type: provider
+    metadata:
+      title: Hola, como vas Camilo ?
+      thumbnail: https://brands.home-assistant.io/_/tts/logo.png
+      media_class: app
+      children_media_class:
+      navigateIds:
+      - {}
+      - media_content_type: app
+        media_content_id: media-source://tts
+      - media_content_type: provider
+        media_content_id: media-source://tts/tts.google_en_com?message=Hola%2C+como+vas+Camilo+%3F&language=es
+  - service: notify.prometeo
+    data:
+      message: Ehlo
+      title: Testing
+      data:
+        image: https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_1280.jpg
+  mode: single
+message_time_for_a_bath:
+  alias: 'Message: Time for a bath'
+  sequence:
+  - service: notify.ada_thinkpad
+    data:
+      message: Es hora de bañarse ya !
+      title: Mensaje de papa
+      data:
+        type: tts
+  - service: notify.ana_hp
+    data:
+      message: Es hora de bañarse ya !
+      title: Mensaje de papa
+  - service: tts.speak
+    data:
+      cache: true
+      media_player_entity_id: media_player.ada_thinkpad
+      message: Hey you !
+      language: es
+    target:
+      entity_id: tts.google_en_com
+  mode: single
+  icon: mdi:shower-head
+'1690935015499':
+  alias: 'Message: Time to sleep'
+  sequence:
+  - service: notify.ada_thinkpad
+    data:
+      message: Ya toca dormir, se apaga el compu en 15 mins !
+      title: Mensaje de papa
+      data:
+        type: tts
+  - service: notify.ana_hp
+    data:
+      message: Ya toca dormir, se apaga el compu en 15 mins !
+      title: Mensaje de papa
+  - delay:
+      hours: 0
+      minutes: 15
+      seconds: 0
+      milliseconds: 0
+  - service: button.press
+    data: {}
+    target:
+      entity_id:
+      - button.ana_hp_satellite_shutdown
+      - button.ada_thinkpad_satellite_shutdown
+  mode: single
+  icon: mdi:sleep
+light_turn_on_cuarto:
+  sequence:
+  - action: light.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.cuarto_luz_camilo
+      - light.cuarto_luz_nati
+      - light.cuarto_lampara
+  alias: Light turn on Cuarto
+  description: ''
+turn_on_sala_set_timer:
+  sequence:
+  - action: light.turn_on
+    target:
+      entity_id: light.dimmable_led_light_bulb
+    data: {}
+  - data: {}
+    target:
+      entity_id:
+      - script.turn_off_sala_after_20_mins
+    action: script.turn_on
+  alias: Turn on sala set timer
+  mode: single
+  description: >-
+    The explicit script.turn_off that used to precede this was a race.
+    script.turn_off cancels asynchronously, so the script.turn_on right after it
+    could hit a timer still marked as running and be refused by mode single,
+    leaving the timer cancelled but never restarted, so the light stayed on.
+    The timer is mode restart now, so calling turn_on alone restarts it cleanly.
+turn_off_sala_after_20_mins:
+  sequence:
+  - delay:
+      hours: 0
+      minutes: 10
+      seconds: 0
+      milliseconds: 0
+  - action: light.turn_off
+    target:
+      entity_id: light.dimmable_led_light_bulb
+    data: {}
+  alias: Turn off sala after 10 mins
+  mode: restart
+  description: >-
+    mode restart so each new motion cleanly cancels and restarts the 10 minute
+    countdown. The second, identical light.turn_off step was removed.
+apagar_camaras:
+  sequence:
+  - action: switch.toggle
+    metadata: {}
+    target:
+      entity_id:
+      - switch.foscam_entrada_wifi
+      - switch.foscam_sala_wifi
+      - switch.camara_4_estudio_nati
+      - switch.camara_3_estar_arriba
+    data: {}
+  alias: Switch cámaras
+  description: ''
+  icon: mdi:camera-off-outline
+'1787000016395':
+  sequence:
+  - data: {}
+    target:
+      entity_id:
+      - script.turn_off_sala_after_20_mins_duplicate
+    action: script.turn_off
+  - action: light.turn_on
+    target:
+      entity_id:
+      - light.hue_lampara_estudio
+    data: {}
+  - data: {}
+    target:
+      entity_id:
+      - script.turn_off_sala_after_20_mins_duplicate
+    action: script.turn_on
+  alias: Turn on office set timer
+  mode: single
+  description: ''
+turn_off_sala_after_20_mins_duplicate:
+  sequence:
+  - delay:
+      hours: 0
+      minutes: 20
+      seconds: 0
+      milliseconds: 0
+  - action: light.turn_off
+    target:
+      entity_id:
+      - light.hue_lampara_estudio
+    data: {}
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.hue_lampara_estudio
+  alias: Turn off office after 20 mins
+  mode: single
+  description: ''

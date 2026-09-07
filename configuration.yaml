@@ -1,0 +1,716 @@
+
+homeassistant:
+#  media_dirs:
+#    media: "/config/media"
+  allowlist_external_dirs:
+    - /config
+# Customization file
+  customize: !include customize.yaml
+
+logger:
+  default: warning
+  logs:
+    homeassistant.components.camera: fatal
+    requests.packages.urllib3: critical
+    # Voice-pipeline diagnostics dialled back from debug to warning 2026-08-24;
+    # debug plus the VACA 3s reconnect loop was filling the journal ~50MB/day.
+    homeassistant.components.assist_pipeline: warning
+    homeassistant.components.tts: warning
+    homeassistant.components.wyoming: warning
+    custom_components.vaca: warning
+    custom_components.ben_router: warning
+
+
+# Enables configuration UI
+config:
+system_health:
+# ---------------------------------------------------------------------------
+# Replaces the deprecated legacy device_tracker (known_devices.yaml, driven by
+# device_tracker.see). Named to land on the SAME entity_ids the legacy ones
+# used, so person.ana / person.ada keep working with no re-pointing.
+# The presence automations publish to these topics with retain: true, so the
+# state survives a Home Assistant restart.
+# ---------------------------------------------------------------------------
+mqtt:
+  device_tracker:
+    - name: ana_tracker
+      unique_id: mqtt_ana_tracker
+      state_topic: "home/presence/ana"
+      payload_home: "home"
+      payload_not_home: "not_home"
+      source_type: router
+    - name: ada_tracker
+      unique_id: mqtt_ada_tracker
+      state_topic: "home/presence/ada"
+      payload_home: "home"
+      payload_not_home: "not_home"
+      source_type: router
+
+recorder:
+    purge_keep_days: 10
+    auto_purge: true
+    commit_interval: 30
+    exclude:
+        entities:
+            # 48 positions x 16 fields, rewritten every 5 min, would bloat
+            # MariaDB. Excluding only stops history/statistics being stored -
+            # the entity and its attributes stay live and fully usable on
+            # dashboards, in templates and in automations.
+            - sensor.robotray_positions
+            # OHLC candle array - same reasoning, belongs nowhere near the DB.
+            - sensor.robotray_ohlc
+ios:
+mobile_app:
+media_source:
+default_config:
+
+#http:
+#  use_x_forwarded_for: true
+#  trusted_proxies:
+#    - 127.0.0.1
+#    - 192.168.40.0/24
+#    - 192.168.0.0/24
+#    - 172.30.0.0/16
+  #base_url: https://camilor.duckdns.org
+  #ssl_certificate: /ssl/fullchain.pem
+  #ssl_key: /ssl/privkey.pem
+
+ben_router:
+   hermes_url: !secret hermes_api_url
+   hermes_api_key: !secret hermes_api_key
+   presence_entity: person.camilo
+   home_states:
+     - home
+   fallback_agent: conversation.openai_conversation
+   hermes_conversation: homeassistant-voice-camilo
+   hermes_session_key: homeassistant:voice:camilo
+
+# Discover some devices automatically
+#discovery:
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+# Enables support for tracking state changes over time
+history:
+# View all events in a logbook
+logbook:
+# Enables a map showing the location of tracked devices
+#map:
+# Track the sun
+sun:
+
+yahoofinance:
+  scan_interval:
+    hours: 1
+  symbols:
+    - QQQ
+    - COP=X
+    - ETH-USD
+    - BTC-USD
+
+
+# Cloud
+cloud:
+
+#duckdns:
+#  domain: camilor.duckdns.org
+#  access_token: !secret duckdnstoken
+
+wake_on_lan:
+
+trakt_tv:
+  language: en # Prefered language for movie/show title
+  timezone: 'America/Bogota'
+  sensors:
+    upcoming:
+      show:
+        days_to_fetch: 90 # How many days in the future you want to fetch
+        max_medias: 3 # How many medias you want to fetch
+      new_show:
+        days_to_fetch: 90
+        max_medias: 3
+      premiere:
+        days_to_fetch: 90
+        max_medias: 3
+      movie:
+        days_to_fetch: 90
+        max_medias: 3
+
+#Device tracker
+#device_tracker:
+#  - platform: ping
+#    hosts:
+#      camilo_iphone: 192.168.0.9
+#      natalia_iphone: 192.168.0.122
+
+#Binary sensors
+#binary_sensor:
+#  - platform: tod
+#    name: Night
+#    after: sunset
+#    before: sunrise
+#  - platform: bayesian
+#    prior: 0.7
+#    name: Camilo Presence
+#    probability_threshold: 0.75
+#    device_class: presence
+#    observations:
+#    - entity_id: 'device_tracker.camilos_iphone_17'
+#      prob_given_true: 0.9
+#      prob_given_false: 0.1
+#      platform: 'state'
+#      to_state: 'home'
+
+#      mami_iphone: 192.168.0.126
+#      papi_iphone: 192.168.0.125
+#      udm: 192.168.0.1
+#      darkknight: 102.168.0.3
+#      switch_estar: 192.168.0.4
+#      homeserver: 192.168.0.19
+#      echo_show: 192.168.0.32
+#      amazon_stick: 192.168.0.33
+
+
+template:
+  - sensor:
+      - default_entity_id: sensor.camilo_status
+        name: Camilo
+        state: "{{ states.input_select.camilo_status_options.state }}"
+      - default_entity_id: sensor.ana_status
+        name: Ana
+        state: "{{ states.input_select.mellizas_status_options.state }}"
+      - default_entity_id: sensor.ada_status
+        state: '{{ states.input_select.mellizas_status_options.state }}'
+        name: 'Ada'
+      - default_entity_id: sensor.sensor_count
+        name: "Number of sensors"
+        state: "{{states.sensor | rejectattr('state', 'eq', 'unavailable') | list | count }}"
+      - default_entity_id: sensor.automation_count
+        name: "Number of automations"
+        state: "{{states.automation | rejectattr('state', 'eq', 'unavailable') | list | count }}"
+      - default_entity_id: sensor.script_count
+        name: "Number of scripts"
+        state: "{{states.script | rejectattr('state', 'eq', 'unavailable') | list | count }}"
+      - default_entity_id: sensor.tracker_count
+        name: "Number of devices"
+        state: "{{states.device_tracker| rejectattr('state', 'eq', 'unavailable') | list | count }}"
+      - default_entity_id: sensor.lights_count
+        name: "Number of lights"
+        state: "{{states.light | rejectattr('state', 'eq', 'unavailable') | list | count }}"
+      - default_entity_id: sensor.camera_count
+        name: "Number of cameras"
+        state: "{{states.camera | rejectattr('state', 'eq', 'unavailable') | list | count }}"
+      - default_entity_id: sensor.mes_es
+        name: "Mes es"
+        state: "{{ ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][now().month-1] }}"
+      - default_entity_id: sensor.hoy_es
+        name: "Hoy es"
+        state: "{{['Lunes','Martes','Miércoles','Jueves','Viernes','Sabado','Domingo'][now().weekday()] }}"
+      # --- RobotRay composition (for the stocks graph) ---
+      # Derived from the positions attribute on sensor.robotray_positions.
+      # That entity is excluded from the recorder (48 rows x 16 fields every
+      # 5 min would bloat MariaDB) but these derived sensors are separate
+      # entities and ARE recorded, so they build graphable history.
+      # The trailing TOTAL row carries account == "" and is filtered out.
+      - name: "RobotRay Stocks Value"
+        unique_id: robotray_stocks_value
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+        availability: "{{ has_value('sensor.robotray_positions') }}"
+        state: >-
+          {% set p = state_attr('sensor.robotray_positions','positions') or [] %}
+          {{ p | rejectattr('account','eq','')
+               | selectattr('sec_type','in',['STK','ETF'])
+               | map(attribute='market_value') | map('float', 0) | sum | round(2) }}
+      - name: "RobotRay Options Value"
+        unique_id: robotray_options_value
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+        availability: "{{ has_value('sensor.robotray_positions') }}"
+        state: >-
+          {% set p = state_attr('sensor.robotray_positions','positions') or [] %}
+          {{ p | rejectattr('account','eq','')
+               | selectattr('sec_type','eq','OPT')
+               | map(attribute='market_value') | map('float', 0) | sum | round(2) }}
+      # Cumulative level for the stacked composition graph:
+      #   band 1  0 .............. cash
+      #   band 2  cash ........... cash + options   <- this sensor
+      #   band 3  cash+options ... net_liquidation  (the remainder is stocks)
+      - name: "RobotRay Cash Plus Options"
+        unique_id: robotray_cash_plus_options
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+        availability: >-
+          {{ has_value('sensor.robotray_cash')
+             and has_value('sensor.robotray_options_value') }}
+        state: >-
+          {{ (states('sensor.robotray_cash') | float(0)
+              + states('sensor.robotray_options_value') | float(0)) | round(2) }}
+      # --- RobotRay daily P&L percentage ---
+      # daily_pnl itself comes straight from the API. Only the percentage is
+      # derived, against net_liquidation (market value) - that is the
+      # denominator the RobotRay UI uses.
+      - name: "RobotRay Daily PnL Percent"
+        unique_id: robotray_daily_pnl_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        # sensor.robotray_daily_pnl is an orphaned template entity left over
+        # from the pre-API-v2 config; the live REST sensor landed on ..._2.
+        # Fall back so this works whichever one is real.
+        availability: >-
+          {{ (has_value('sensor.robotray_daily_pnl')
+              or has_value('sensor.robotray_daily_pnl_2'))
+             and has_value('sensor.robotray_net_liquidation')
+             and states('sensor.robotray_net_liquidation') | float(0) != 0 }}
+        state: >-
+          {% set d = states('sensor.robotray_daily_pnl') if has_value('sensor.robotray_daily_pnl')
+                     else states('sensor.robotray_daily_pnl_2') %}
+          {% set nl = states('sensor.robotray_net_liquidation') | float(0) %}
+          {{ ((d | float(0) / nl) * 100) | round(2) }}
+        icon: >-
+          {% set d = states('sensor.robotray_daily_pnl') if has_value('sensor.robotray_daily_pnl')
+                     else states('sensor.robotray_daily_pnl_2') %}
+          {% set v = d | float(0) %}
+          {{ 'mdi:trending-up' if v > 0 else ('mdi:trending-down' if v < 0 else 'mdi:trending-neutral') }}
+
+  # --- Tennis-ball indicator for the bedside dashboard ---------------------
+  # Shows a tennis ball when it has not rained for 5h and no rain is forecast
+  # for the next 5h, i.e. the court is probably dry and staying dry.
+  #
+  # Met.no dropped the old "forecast" attribute, so the hourly forecast has to
+  # be pulled with the weather.get_forecasts service. That needs an action,
+  # which state-based templates cannot do - hence a trigger-based template.
+  - trigger:
+      - trigger: time_pattern
+        minutes: "/15"
+      - trigger: homeassistant
+        event: start
+    action:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: hourly
+        response_variable: fc
+    sensor:
+      - name: "Lluvia proximas 5h"
+        unique_id: lluvia_proximas_5h
+        unit_of_measurement: mm
+        state: >-
+          {{ (fc['weather.forecast_home'].forecast[:5]
+              | map(attribute='precipitation') | map('float', 0) | sum) | round(2) }}
+        attributes:
+          condiciones: >-
+            {{ fc['weather.forecast_home'].forecast[:5]
+               | map(attribute='condition') | list | join(', ') }}
+
+  # Tennis verdict. State-based (not trigger-based) so it re-evaluates whenever
+  # either input moves - the history_stats sensor updates on its own schedule.
+  - binary_sensor:
+      - name: "Tenis OK"
+        unique_id: tenis_ok
+        icon: >-
+          {{ 'mdi:tennis-ball' if is_state('binary_sensor.tenis_ok','on') else 'mdi:weather-rainy' }}
+        state: >-
+          {{ states('sensor.lluvia_ultimas_5h') | float(99) == 0
+             and states('sensor.lluvia_proximas_5h') | float(99) == 0 }}
+        availability: >-
+          {{ has_value('sensor.lluvia_ultimas_5h') and has_value('sensor.lluvia_proximas_5h') }}
+
+sensor:
+  # Hours of rain in the last 5h, used by binary_sensor.tenis_ok.
+  # NOTE: this reads the Met.no *reported condition*, not measured rainfall -
+  # Met.no has no rain gauge here. It updates roughly hourly, so a short shower
+  # between updates can be missed. Good enough for "is the court likely dry",
+  # not a substitute for an actual rain sensor.
+  - platform: history_stats
+    name: Lluvia ultimas 5h
+    entity_id: weather.forecast_home
+    state:
+      - "rainy"
+      - "pouring"
+      - "lightning-rainy"
+      - "hail"
+      - "snowy-rainy"
+    type: time
+    end: "{{ now() }}"
+    duration: "05:00:00"
+  - platform: history_stats
+    name: Thinkpad Ana ON today
+    # was device_tracker.desktop_kpque7s - the Dell, now destroyed and gone
+    # from the registry, so this sensor had been dead. Ana is on a Thinkpad now.
+    entity_id: device_tracker.thinkpad_ana
+    state: "home"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Thinkpad Ada ON today
+    # Same physical laptop (MAC cc:5e:f8:7c:37:41), just renamed at some point
+    # to device_tracker.thinkpadl14 - the old id no longer resolves.
+    entity_id: device_tracker.thinkpadl14
+    state: "home"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Ninas TV time ON today
+    entity_id: device_tracker.amazon_stick_ninas
+    state: "home"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+#  - platform: history_stats
+#    name: Ada TV time ON today
+#    entity_id: device_tracker.samsung_55_ht
+#    state: "home"
+#    type: time
+#    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+#    end: "{{ now() }}"
+    
+#  - platform: systemmonitor
+#    resources:
+#      - type: disk_use_percent
+#        arg: /
+#      - type: memory_use_percent
+#      - type: processor_use
+#      - type: last_boot
+#      - type: network_in
+#        arg: eth0
+#      - type: network_out
+#        arg: eth0
+
+  - platform: currencylayer
+    api_key: !secret currencylayer
+    base: USD #optional
+    quote:
+      - COP
+
+#puerta principal
+#  - platform: template
+#    sensors:
+#      puerta_principal:
+#        value_template: "{% if is_state('binary_sensor.door_window_sensor_6_access_control_window_door_is_open', 'off') -%}Closed{%- else -%}Open{%- endif %}"
+#        friendly_name: 'Puerta Principal'
+#        device_class: door
+
+
+  - platform: time_date
+    display_options:
+      - 'time_date'
+
+#telegram_bot:
+#  - platform: polling
+#    api_key: !secret telegramAPI
+#    allowed_chat_ids:
+#      - !secret telegramchatid
+
+notify:
+  - name: !secret telegramBot
+    platform: telegram
+    #api_key: !secret telegramAPI
+    chat_id: !secret telegramchatid
+#  - name: notify
+#    platform: html5
+#    gcm_api_key:
+#    gcm_sender_id:
+
+#IFTTT
+#ifttt:
+#  key: !secret ifttt
+
+#Camaras
+#camecamera.camara_1ra 1
+#  platform: mjpeg
+#  mjpeg_url: !secret camera1URL
+#  name: Camara 1
+#camera 2
+#  platform: mjpeg
+#  mjpeg_url: !secret camera2URL
+#  name: Camara 2
+#camera 3
+#    platform: mjpeg
+#    mjpeg_url: !secret camera3URL
+#    name: Camara 3
+#camera 4
+#    platform: mjpeg
+#    mjpeg_url: !secret camera4URL
+#    name: Camara 4
+#camera 5
+#    platform: mjpeg
+#    mjpeg_url: !secret camera5URL
+#    name: Camara 5
+#camera 6
+#    platform: mjpeg
+#    mjpeg_url: !secret camera6URL
+#    name: Camara 6
+#camera 7
+#    platform: mjpeg
+#    mjpeg_url: !secret camera7URL
+#    name: Camara 7
+#camera 8
+#    platform: mjpeg
+#    mjpeg_url: !secret camera8URL
+#    name: Camara 8
+#camera 9
+#    platform: mjpeg
+#    mjpeg_url: !secret camera9URL
+#    name: Camara 9
+#camera 10
+#    platform: mjpeg
+#    mjpeg_url: !secret camera10URL
+#    name: Camara 10
+
+
+##CUSTOM INPUTS - CAMBIAR STATUS
+input_select:
+  camilo_status_options:
+    name: Camilo Status
+    options:
+      - Home
+      - Just Arrived
+      - Just Left
+      - Away
+      - Extended Away
+    # No "initial:" on purpose. initial forces this back to Home on every HA
+    # start, throwing away the real presence state - and there is a daily
+    # restart automation at 02:00. Without it, the last state is restored.
+    
+  mellizas_status_options:
+    name: Mellizas
+    options:
+      - Home
+      - Away
+    initial: Away
+    
+#COVERS
+
+#cover:
+#  platform: command_line
+#  covers:
+#    estudio:
+#      command_open: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0107U > /dev/ttyUSB0'; echo '1'> switches/es.cortina"
+#      command_close: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0107D > /dev/ttyUSB0'; echo '0'> switches/es.cortina"
+#      command_stop:  "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0107S > /dev/ttyUSB0'"
+#      command_state: "cat switches/es.cortina"
+#      friendly_name: Cuarto Estudio
+#      value_template: >
+#        {% if value == '1' %}
+#        100
+#        {% elif value == '0' %}
+#        0
+#        {% endif %}
+#    cuarto_principal:
+#      command_open: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0116U > /dev/ttyUSB0'; echo '1'> switches/cp.cortina"
+#      command_close: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0116D > /dev/ttyUSB0'; echo '0'> switches/cp.cortina"
+#      command_stop:  "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0116S > /dev/ttyUSB0'"
+#      command_state: "cat switches/cp.cortina"
+#      friendly_name: Cuarto Principal
+#      value_template: >
+#        {% if value == '1' %}
+#        100
+#        {% elif value == '0' %}
+#        0
+#        {% endif %}
+#    sala:
+#      command_open: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0114U > /dev/ttyUSB0'; echo '1'> switches/sala.cortina"
+#      command_close: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0114D > /dev/ttyUSB0'; echo '0'> switches/sala.cortina"
+#      command_stop:  "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0114S > /dev/ttyUSB0'"
+#      command_state: "cat switches/sala.cortina"
+#      friendly_name: Sala
+#      value_template: >
+#        {% if value == '1' %}
+#        100
+#        {% elif value == '0' %}
+#        0
+#        {% endif %}
+#    todo:
+#      command_open: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0115U > /dev/ttyUSB0'; echo '1'> switches/todo.cortina"
+#      command_close: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0115D > /dev/ttyUSB0'; echo '0'> switches/todo.cortina"
+#      command_stop:  "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0115S > /dev/ttyUSB0'"
+#      command_state: "cat switches/todo.cortina"
+#      friendly_name: Todo
+#      value_template: >
+#        {% if value == '1' %}
+#        100
+#        {% elif value == '0' %}
+#        0
+#        {% endif %}
+#    estar:
+#      command_open: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0105U > /dev/ttyUSB0'; ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.181 'echo 0106U > /dev/ttyUSB0'; echo '1'> switches/estard.cortina"
+#      command_close: "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0105D > /dev/ttyUSB0'; ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.181 'echo 0106D > /dev/ttyUSB0'; echo '0'> switches/estard.cortina"
+#      command_stop:  "ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no -q pi@192.168.0.180 'echo 0105S > /dev/ttyUSB0'"
+#      command_state: "cat switches/estard.cortina"
+#      friendly_name: Estar
+#      value_template: >
+#        {% if value == '1' %}
+#        100
+#        {% elif value == '0' %}
+#        0
+#        {% endif %}
+
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+
+panel_custom:
+  - name: ha_integ
+    sidebar_title: Integrations
+    sidebar_icon: mdi:chip
+    js_url: /api/hassio/app/entrypoint.js
+    url_path: 'config/integrations'
+    embed_iframe: true
+    require_admin: true
+    config:
+      ingress: core_configurator  
+  - name: ha_auto
+    sidebar_title: Automations
+    sidebar_icon: mdi:cog-outline
+    js_url: /api/hassio/app/entrypoint.js
+    url_path: 'config/automation'
+    embed_iframe: true
+    require_admin: true
+    config:
+      ingress: core_configurator 
+      
+
+# ---------------------------------------------------------------------------
+# RobotRay portfolio (https://rr.camilorojas.co - RobotRay API v2.0.0)
+# Talks to the REST API directly. The MCP server is a stdio wrapper around this
+# same API and cannot be reached by HA; Assist gets portfolio answers via
+# ben_router -> Ben/Hermes, which has its own MCP client.
+#
+# Schema notes from the API docs:
+#   net_liquidation - marked book value, CASH ALREADY INCLUDED. Do not add
+#                     total_cash to it. Moves when the market moves.
+#   capital         - the broker's own figure (IB NetLiquidation / Plaid
+#                     balances.current). Can sit unchanged for days.
+#   daily_pnl       - exposed directly here. Do NOT derive it by differencing
+#                     /history (the docs call this out explicitly).
+#   null            - means "not priceable", never zero.
+# ---------------------------------------------------------------------------
+rest:
+  - resource: !secret robotray_current_url
+    scan_interval: 300
+    timeout: 20
+    sensor:
+      - name: RobotRay Net Liquidation
+        unique_id: robotray_net_liquidation
+        value_template: "{{ value_json.data.net_liquidation | float(0) | round(2) }}"
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+      - name: RobotRay Capital
+        unique_id: robotray_capital
+        value_template: "{{ value_json.data.capital | float(0) | round(2) }}"
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+      - name: RobotRay Cash
+        unique_id: robotray_total_cash
+        value_template: "{{ value_json.data.total_cash | float(0) | round(2) }}"
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+      - name: RobotRay Daily PnL
+        unique_id: robotray_daily_pnl_api
+        value_template: "{{ value_json.data.daily_pnl | float(0) | round(2) }}"
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+      - name: RobotRay Unrealized PnL
+        unique_id: robotray_unrealized_pnl
+        value_template: "{{ value_json.data.unrealized_pnl | float(0) | round(2) }}"
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+      - name: RobotRay Realized PnL
+        unique_id: robotray_realized_pnl
+        value_template: "{{ value_json.data.realized_pnl | float(0) | round(2) }}"
+        unit_of_measurement: USD
+        device_class: monetary
+        state_class: total
+      # Real holdings only: drops the CASH rows and the trailing TOTAL row
+      # (which carries account == "" and exists for spreadsheet use).
+      - name: RobotRay Positions
+        unique_id: robotray_positions
+        value_template: >-
+          {{ value_json.data.positions
+             | rejectattr('account', 'eq', '')
+             | rejectattr('sec_type', 'eq', 'CASH')
+             | list | count }}
+        json_attributes_path: "$.data"
+        json_attributes:
+          - positions
+          - snapshot_timestamp
+          - data_source
+  # ---------------------------------------------------------------------------
+  # RobotRay OHLC - candlestick source for the stocks view.
+  #
+  # WEEKLY, not daily, and deliberately so. Of 52 daily periods only 10 are
+  # non-synthetic: early July logged ~1 sample/day, and weekends are flat by
+  # definition (markets closed, net liquidation does not move). Weekly rolls
+  # those up - 8 of 9 weekly periods carry real intraday range.
+  # For daily candles instead, change interval=weekly to interval=daily in
+  # the robotray_ohlc_url secret.
+  #
+  # State is the period count (small, stable). The candles ride in the
+  # attribute, and this entity is recorder-excluded so the array never
+  # reaches the database.
+  - resource: !secret robotray_ohlc_url
+    scan_interval: 900
+    timeout: 20
+    sensor:
+      - name: RobotRay OHLC
+        unique_id: robotray_ohlc
+        value_template: "{{ value_json.data | count }}"
+        json_attributes:
+          - data
+
+# ---------------------------------------------------------------------------
+# Bedside dashboard (IBM iPhone bedstand, iOS kiosk mode)
+# ---------------------------------------------------------------------------
+# Replaces the dead group.cuartoprincipal, whose five members (light.cuarto,
+# light.hue_lamp_1..3, binary_sensor.control_cuarto) have not existed for a
+# long time - the group sat at "unknown" and could never be toggled.
+# A light group (not a legacy group) gives a real light entity, so the
+# dashboard gets brightness control and a proper on/off state, not just a
+# stale on/off union.
+light:
+  - platform: group
+    name: Cuarto Principal
+    unique_id: cuarto_principal
+    entities:
+      - light.cuarto_lampara
+      - light.cuarto_luz_camilo
+      - light.cuarto_luz_nati
+
+# Single source of truth for night mode. Both the 22:00/08:00 automation and
+# the moon/sun button on the dashboard write this, so the schedule and the
+# manual toggle can never disagree about the current state.
+input_boolean:
+  bedside_night_mode:
+    name: Bedside Night Mode
+    icon: mdi:moon-waning-crescent
+
+# YAML-mode dashboard so the layout can be version-controlled and edited as a
+# file. Still fully standalone - it cannot affect the main or View Assist
+# dashboards, which stay in storage mode.
+lovelace:
+  mode: storage
+  dashboards:
+    bedside-clock:
+      mode: yaml
+      filename: bedside.yaml
+      title: Bedside
+      icon: mdi:bed-clock
+      show_in_sidebar: true
+      require_admin: false
+
+# Loads themes/ - notably themes/bedside/bedside_black.yaml, used by the
+# bedside dashboard. Without this block no theme files are read at all.
+frontend:
+  themes: !include_dir_merge_named themes

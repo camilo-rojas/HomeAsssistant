@@ -1,0 +1,71 @@
+weather:
+  name: Weather & Commute
+  entities:
+    - sensor.aeotec_zw100_multisensor_6_temperature_2
+    - sensor.tiempo_casa_a_trabajo
+    - sensor.tiempo_trabajo_a_casa
+
+cuartoprincipal:
+  name: Cuarto principal
+  entities:
+
+    - light.cuarto
+    - light.hue_lamp_1
+    - light.hue_lamp_2
+    - light.hue_lamp_3
+    - binary_sensor.control_cuarto
+    - binary_sensor.ap_cuarto
+    - binary_sensor.phillipshueip
+    - binary_sensor.samsung_cuarto
+
+hometheater:
+  name: Hometheater
+  entities:
+    - camera.camara_cuarto_amarillo
+    - sensor.aeotec_zw100_multisensor_6_burglar
+    - sensor.aeotec_zw100_multisensor_6_luminance
+    - sensor.aeotec_zw100_multisensor_6_relative_humidity
+    - sensor.aeotec_zw100_multisensor_6_temperature
+    - sensor.aeotec_zw100_multisensor_6_ultraviolet
+    - binary_sensor.camara_1
+    - binary_sensor.ps
+    - binary_sensor.samsung_ht
+    - camera.camara_entrada
+    - binary_sensor.aeotec_zw100_multisensor_6_sensor
+
+estar:
+  name: Estudio
+  entities:
+#    - switch.ep
+    - binary_sensor.impresora
+
+sala:
+  name: Sala
+  entities:
+    - binary_sensor.camara_4
+    - camera.camara_sala
+    - light.hue_white_lamp_3
+    - light.hue_white_lamp_4
+    - light.sala
+    - binary_sensor.aeotec_zw100_multisensor_6_sensor_2
+    - sensor.aeotec_zw100_multisensor_6_burglar_2
+    - sensor.aeotec_zw100_multisensor_6_luminance_2
+    - sensor.aeotec_zw100_multisensor_6_relative_humidity_2
+    - sensor.aeotec_zw100_multisensor_6_temperature_2
+    - sensor.aeotec_zw100_multisensor_6_ultraviolet_2
+
+presence:
+  name: Presence at home
+  # Rebuilt 2026-08-28. The previous members could never resolve to on/off, so
+  # this group sat at "unknown" permanently and the arrival automation
+  # (Luz - Prender todas al llegar @ 16-23h) never fired once:
+  #   device_tracker.zte_blade_a3_lite  - entity does not exist (0 states ever)
+  #   binary_sensor.natalia_presence    - entity does not exist (0 states ever)
+  #   sensor.ana_status / ada_status    - plain sensors holding "Home"/"Away";
+  #                                       a sensor's text state is not mappable
+  #                                       to on/off, so the group stayed unknown
+  # person.* map home -> on and anything else -> off, which is exactly the
+  # "is anybody home" semantics the automation wants.
+  entities:
+    - person.camilo
+    - person.natalia

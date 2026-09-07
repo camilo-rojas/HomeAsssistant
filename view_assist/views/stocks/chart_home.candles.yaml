@@ -1,0 +1,95 @@
+# Candlestick variant of chart_home for stocks.yaml.
+# Requires apexcharts-card (HACS) + sensor.robotray_ohlc (configuration.yaml).
+#
+# DATA: RobotRay /api/portfolio/ohlc, interval=weekly, field=net_liquidation.
+#   Weekly because daily is mostly noise right now - 42 of 52 daily periods
+#   are synthetic (samples==1), and weekends are flat by definition. Weekly
+#   gives 8 real candles out of 9 instead of 10 out of 52.
+#
+# COVERAGE: history begins 2026-07-05, so a 180d span is ~28% filled today
+#   and fills in on its own. Nothing needs changing later.
+#
+# CAVEAT: chart_type "candlestick" is not in apexcharts-card's documented
+#   list (line|scatter|pie|donut|radialBar). The bundled ApexCharts library
+#   supports it and the card passes chart.type through, so this is expected
+#   to work - but it is the one untested assumption here. If the card
+#   rejects it, the fallback is the stacked-area chart in
+#   chart_home.apex.yaml, which uses only documented features.
+chart_home:
+  card:
+    type: custom:apexcharts-card
+    chart_type: candlestick
+    graph_span: 180d
+    header:
+      show: false
+    series:
+      - entity: sensor.robotray_ohlc
+        name: Net Liquidation
+        # The REST sensor holds the candle array in an attribute; this maps it
+        # into ApexCharts' OHLC shape. Synthetic periods (single sample, so
+        # open==high==low==close) are dropped - they render as flat ticks and
+        # only add noise.
+        data_generator: |
+          const rows = entity.attributes.data || [];
+          return rows
+            .filter(d => d.synthetic !== true)
+            .map(d => ({
+              x: new Date(d.period_start + "T00:00:00").getTime(),
+              y: [d.open, d.high, d.low, d.close]
+            }));
+    apex_config:
+      chart:
+        height: 288
+        background: 'transparent'
+        toolbar:
+          show: false
+        animations:
+          enabled: false
+      plotOptions:
+        candlestick:
+          colors:
+            upward: '#22C55E'
+            downward: '#E74C3C'
+          wick:
+            useFillColor: true
+      dataLabels:
+        enabled: false
+      grid:
+        borderColor: 'rgba(255,255,255,0.10)'
+        strokeDashArray: 3
+      xaxis:
+        type: datetime
+        labels:
+          style:
+            colors: 'rgba(255,255,255,0.62)'
+            fontSize: '11px'
+          datetimeUTC: false
+      yaxis:
+        tooltip:
+          enabled: true
+        forceNiceScale: true
+        labels:
+          style:
+            colors: 'rgba(255,255,255,0.62)'
+            fontSize: '11px'
+          formatter: |
+            EVAL:function(v) {
+              if (v === null || v === undefined) return '';
+              return '$' + (v/1000).toFixed(0) + 'k';
+            }
+      tooltip:
+        theme: dark
+        x:
+          format: 'dd MMM yyyy'
+    card_mod:
+      style: |
+        ha-card {
+          background: #000000 !important;
+          border: none;
+          box-shadow: none;
+          height: 100% !important;
+          padding: 1.3rem 1rem 0.5rem 1.1rem;
+          box-sizing: border-box;
+          --primary-text-color: #ECECEC;
+          --secondary-text-color: rgba(255,255,255,0.62);
+        }
