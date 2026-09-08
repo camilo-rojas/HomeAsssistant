@@ -1129,7 +1129,11 @@
         data:
           message: kiosk_set_brightness
           data:
-            brightness: 2
+            # The parameter is "level", NOT "brightness". Using the wrong name
+            # fails silently - the notification is delivered, the app ignores
+            # the payload, and nothing happens. Volume worked all along because
+            # its parameter really is called "volume".
+            level: 2
       - action: notify.mobile_app_ibm_iphone_bedstand
         data:
           message: kiosk_set_volume
@@ -1143,7 +1147,7 @@
         data:
           message: kiosk_set_brightness
           data:
-            brightness: 100
+            level: 80
       # Daytime volume restore. Without this the phone would stay at 15% all
       # day, since nothing else resets it. Adjust to taste.
       - action: notify.mobile_app_ibm_iphone_bedstand
@@ -1153,3 +1157,42 @@
             volume: 60
   mode: queued
   max: 5
+- id: '1757300000000'
+  alias: Presence - Sync Camilo status with person.camilo
+  description: >-
+    Repairs input_select.camilo_status_options when it drifts out of step with
+    person.camilo.
+
+    Why this is needed: the input_select is a restore entity, so on restart it
+    simply resumes its last option, and every automation that maintains it is
+    state-TRIGGERED (from: not_home, to: home). A restart produces no such
+    transition, so nothing re-evaluates what the status ought to be. On
+    2026-09-06 the "Camilo just arrived" automation was disabled, the status
+    stuck on Away, and three subsequent restarts each re-asserted Away while
+    Camilo had been home for 35 hours - which made both Movimiento automations
+    fire and Telegram snapshots of him in his own house.
+
+    A restart is also enough on its own: arriving home while HA is down means
+    the transition happens with nothing listening, and the status stays stale.
+
+    The condition only fires on a genuine contradiction, so the transitional
+    states (Just Left / Just Arrived) are left alone to run their course.
+  triggers:
+  - trigger: homeassistant
+    event: start
+  - trigger: time_pattern
+    hours: '/12'
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ (is_state('person.camilo','home') and
+          states('input_select.camilo_status_options') in ['Away','Extended Away'])
+         or (not is_state('person.camilo','home') and
+          is_state('input_select.camilo_status_options','Home')) }}
+  actions:
+  - action: input_select.select_option
+    target:
+      entity_id: input_select.camilo_status_options
+    data:
+      option: "{{ 'Home' if is_state('person.camilo','home') else 'Away' }}"
+  mode: single
