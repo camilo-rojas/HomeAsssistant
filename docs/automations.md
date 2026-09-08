@@ -88,3 +88,49 @@ stops the deprecated component recreating entries. `ana_tracker` and
 `ada_tracker` moved to MQTT device trackers in `configuration.yaml`, named to
 land on the same entity IDs so `person.ana` / `person.ada` kept working with no
 re-pointing.
+
+## Presence state machine drift
+
+`input_select.camilo_status_options` sat on `Away` for 35 hours while
+`person.camilo` was `home`. Both Movimiento automations gate on the input_select
+rather than on `person.camilo` directly, so they fired and Telegrammed snapshots
+of Camilo inside his own house.
+
+Cause: `automation.presence_camilo_just_arrived` was **disabled**. The state
+machine only moves one way — `just_left` and `is_away` were enabled, so
+departures worked and arrivals were a dead end.
+
+Restarts cannot repair this, and the history proves it:
+
+```
+Sep 6 08:22:53  ->  Away     (set by the automation)
+Sep 6 17:20:20  ->  Away     (restart re-asserted it)
+Sep 7 11:41:02  ->  Away     (restart)
+Sep 7 12:13:18  ->  Away     (restart)
+```
+
+`input_select` is a restore entity — on startup it resumes its last option. And
+every presence automation is state-*triggered* (`from: not_home, to: home`); a
+restart produces no transition, so nothing re-evaluates. Arriving home while HA
+is down loses the transition entirely.
+
+**Fix:** `Presence - Sync Camilo status with person.camilo` (id
+`1757300000000`) — triggers on `homeassistant: start` and every 12 hours, and
+only writes on a genuine contradiction so the transitional `Just Left` /
+`Just Arrived` states are left to run their course.
+
+**Still worth doing:** add `person.camilo: not_home` as a second condition in
+both Movimiento automations, so a stuck state machine cannot raise an alert on
+its own.
+
+## Bedside night mode
+
+Two automations, deliberately split so the schedule and the dashboard button
+share one code path:
+
+- `1757260000000` — schedule only, flips `input_boolean.bedside_night_mode`
+- `1757260000001` — reacts to the boolean, pushes kiosk brightness and volume
+
+The brightness parameter is **`level`**, not `brightness`. The wrong name is
+delivered and silently ignored — volume worked from the start because its
+parameter genuinely is `volume`. Day 80%, night 2%.

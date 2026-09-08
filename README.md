@@ -65,4 +65,5 @@ docs/                       the reasoning behind all of it
 | `docs/view-assist.md` | Stocks view, candlesticks, surviving VA updates |
 | `docs/automations.md` | Presence, lighting, the failures behind the fixes |
 | `docs/infrastructure.md` | Network, disk, voice pipeline |
+| `docs/frontend-gotchas.md` | Silent frontend failures and how they were found |
 | `docs/helpers.md` | UI-created helpers that must be recreated by hand |

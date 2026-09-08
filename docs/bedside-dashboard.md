@@ -19,24 +19,50 @@ Invalid config for 'lovelace': Url path needs to contain a hyphen (-)
 `ha core check` reports this as `Successful config (partial)` in its summary
 line — you have to read the full output to see the actual error.
 
-## Layout
+## Views
 
-Fixed viewport, no scrolling. `layout-card` grid pins every element to a
-fraction of the screen:
+Eight, all `type: panel` with `theme: bedside_black`. Everything after the first
+is `subview: true` so no tab bar renders.
+
+| Path | Purpose |
+|---|---|
+| `/bedside-clock/home` | clock, weather, market, controls |
+| `/bedside-clock/mercado` | portfolio stats + candlestick chart |
+| `/bedside-clock/clima` | hourly + daily forecast |
+| `/bedside-clock/estudio` | study: lights, perfume, presence, temp, echo |
+| `/bedside-clock/cocina` | kitchen: echo, camera |
+| `/bedside-clock/sala` | living room: temp, echo, receiver, camera |
+| `/bedside-clock/ninas` | girls' room: light, blanket, TV |
+| `/bedside-clock/cameras` | 2x2 live camera grid |
+
+Every subview carries its own **Volver** chip — `kiosk-mode` hides the header,
+so there is no other way back.
+
+## Main view layout
+
+Fixed viewport, no scrolling. `layout-card` grid pins every element:
 
 ```
-"clock  top"      22%     clock/date/weather   |  status chips
-"clock  lights"   40%                          |  light chips
-"market lights"   38%     market (tappable)    |
-   58%              42%
+"clock    persons"   15%     people chips (twins conditional)
+"clock    top"       15%     ecobee / cameras / Ben / night toggle
+"clock    lights"    15%     bedroom light chips
+"weather  rooms"     15%     Estudio / Cocina / Sala / Ninas
+"market   keydate"   16%     next calendar event
+"market   media"     24%     Spotify
+   50%       50%
 ```
 
-Most modern HA cards assume a scrolling responsive layout. A fixed kiosk
-display needs exact geometry, which is why `layout-card` wraps everything and
-the clock is a `button-card` — Mushroom cannot render a 122px font cleanly.
+Row heights are **sized from content**, not chosen by eye. Each group's leftover
+space is roughly equal, which is what makes the vertical gaps look even. An
+earlier version had the market cell carrying 113px of slack against the clock
+cell's 6px, which read as badly unbalanced.
 
-The clock re-renders off `sensor.time_date` via `triggers_update`. Without
-that it freezes until some other referenced entity changes.
+The clock is a `button-card` because Mushroom cannot render a 122px font
+cleanly; everything else is Mushroom. The clock re-renders off `sensor.time_date`
+via `triggers_update` — without that it freezes.
+
+**The weather strip is its own card**, not part of the clock, purely so it can
+carry a `tap_action` to the Clima view. Same for the market block and Mercado.
 
 ## Night mode
 
@@ -119,3 +145,42 @@ kiosk_mode:
   hide_header: true
   hide_sidebar: true
 ```
+
+## Mercado
+
+Direct port of the View Assist stocks view — root `button-card`, absolutely
+positioned chart panel, hand-rolled ApexCharts candlesticks. See
+`docs/view-assist.md` for why candlesticks cannot use `apexcharts-card`, and
+`docs/frontend-gotchas.md` for the height and inline-handler traps that made
+this take several attempts.
+
+The x-axis is **category**, not datetime: a datetime axis leaves a visible gap
+for every weekend and holiday. Category spacing draws only the candles that
+exist. Holidays are already dropped upstream by the zero-range filter, since no
+trading means `open == high == low == close`.
+
+## People chips
+
+`person.camilo` and `person.natalia` always render; Ana and Ada use Mushroom's
+`conditional` chip and appear only when `state: home`.
+
+Photos come from `entity_picture`. Mushroom has no per-chip text colour, so the
+name is coloured positionally in `card_mod`:
+
+```css
+.chip-container > *:nth-child(1)    /* Camilo  */
+.chip-container > *:nth-child(2)    /* Natalia */
+.chip-container > *:nth-child(n+3)  /* always green - conditional chips only
+                                       render when home */
+```
+
+Photos are hidden in night mode - they cannot be tinted red.
+
+## Key date
+
+`calendar.key_dates` exposes the next upcoming event directly in its
+attributes (`message`, `start_time`), so no `calendar.get_events` call is
+needed - unlike the weather forecast, which does require one.
+
+Emoji are stripped from the title with an allowlist regex that preserves
+Spanish accents: `[^A-Za-zÀ-ÿ0-9 .,:()\-'&/]`.
