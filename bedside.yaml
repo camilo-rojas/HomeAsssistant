@@ -98,14 +98,44 @@ views:
                   const t = states['binary_sensor.tenis_ok'];
                   const ball = (!night && t && t.state === 'on')
                     ? `<ha-icon icon="mdi:tennis-ball" style="--mdc-icon-size:32px;color:#DFFF4F;margin-left:16px;"></ha-icon>` : '';
+                  // Self-ticking clock. This field is only re-rendered when one
+                  // of triggers_update changes, i.e. when sensor.time_date
+                  // arrives over the websocket - so a dropped connection used
+                  // to freeze the digits at the last minute received (seen
+                  // 2026-09-19: stuck at 8:59pm while the phone itself was
+                  // fine). The interval below rewrites the text from the
+                  // browser's own clock every 5s, independent of Home
+                  // Assistant, and is registered once per rendered element.
+                  const tick = () => {
+                    const el = document.querySelector('.rr-clock') ||
+                      (function find(root){
+                        if (!root || !root.querySelectorAll) return null;
+                        const hit = root.querySelector('.rr-clock');
+                        if (hit) return hit;
+                        for (const e of root.querySelectorAll('*'))
+                          if (e.shadowRoot) { const f = find(e.shadowRoot); if (f) return f; }
+                        return null;
+                      })(document.body);
+                    if (!el) return;
+                    const d = new Date();
+                    const parts = d.toLocaleTimeString('en-US',
+                      { hour: 'numeric', minute: '2-digit', hour12: true }).split(' ');
+                    const hEl = el.querySelector('.rr-h'), mEl = el.querySelector('.rr-m');
+                    if (hEl) hEl.textContent = parts[0];
+                    if (mEl) mEl.textContent = (parts[1] || '').toLowerCase();
+                    if (!window.__rrClockTimer) {
+                      window.__rrClockTimer = setInterval(tick, 5000);
+                    }
+                  };
+                  setTimeout(tick, 50);
                   return `
-                    <div style="display:flex;flex-direction:column;align-items:flex-start;
+                    <div class="rr-clock" style="display:flex;flex-direction:column;align-items:flex-start;
                                 justify-content:center;width:100%;height:100%;
                                 box-sizing:border-box;padding:0 6px 0 4px;">
                       <div style="display:flex;align-items:baseline;color:${fg};
                                   line-height:0.92;white-space:nowrap;">
-                        <span style="font-size:122px;font-weight:300;letter-spacing:-4px;">${p[0]}</span>
-                        <span style="font-size:40px;margin-left:12px;">${(p[1]||'').toLowerCase()}</span>
+                        <span class="rr-h" style="font-size:122px;font-weight:300;letter-spacing:-4px;">${p[0]}</span>
+                        <span class="rr-m" style="font-size:40px;margin-left:12px;">${(p[1]||'').toLowerCase()}</span>
                       </div>
                       <div style="font-size:25px;color:${dim};margin-top:10px;white-space:nowrap;">${date}</div>
                     </div>`;
@@ -345,19 +375,27 @@ views:
                 }
                 {% endif %}
 
+          # Portfolio is private: the tile renders blank and stops linking to
+          # Mercado unless sensor.camilo_room says Cuarto Principal - this
+          # screen lives in the bedroom, so anywhere else means someone other
+          # than Camilo is looking at it. unknown/unavailable hide it too -
+          # fail closed.
           - type: custom:button-card
             view_layout: {grid-area: market}
             triggers_update:
               - sensor.robotray_daily_pnl_2
               - sensor.robotray_net_liquidation
               - input_boolean.bedside_night_mode
+              - sensor.camilo_room
             show_icon: false
             show_name: false
             show_state: false
             show_label: false
             tap_action:
               action: navigate
-              navigation_path: /bedside-clock/mercado
+              navigation_path: >-
+                [[[ return (states['sensor.camilo_room'] && states['sensor.camilo_room'].state === 'Cuarto Principal')
+                      ? '/bedside-clock/mercado' : '/bedside-clock/home'; ]]]
             styles:
               card:
                 - background: '#000000'
@@ -374,6 +412,8 @@ views:
             custom_fields:
               m: |
                 [[[
+                  const cam = states['sensor.camilo_room'];
+                  if (!cam || cam.state !== 'Cuarto Principal') return '';
                   const night = states['input_boolean.bedside_night_mode']
                     && states['input_boolean.bedside_night_mode'].state === 'on';
                   const dim = night ? '#5A1010' : 'rgba(255,255,255,0.62)';
@@ -412,15 +452,46 @@ views:
             chips:
               - type: template
                 entity: person.camilo
-                picture: "{{ state_attr('person.camilo','entity_picture') }}"
+                picture: >-
+                  {{ '' if is_state('input_boolean.bedside_night_mode','on')
+                     else state_attr('person.camilo','entity_picture') }}
+                icon: mdi:account
                 content: Camilo
                 icon_color: >-
                   {% if is_state('input_boolean.bedside_night_mode','on') %}red
                   {% elif is_state('person.camilo','home') %}green{% else %}red{% endif %}
                 tap_action: {action: more-info}
+                # Room goes UNDER the name, inside the same chip. The parent
+                # card's card_mod cannot reach in here (each chip is its own
+                # shadow root), but a chip carries its own card_mod, which is
+                # applied to that chip's root - so this is the only level from
+                # which .content is reachable. Rendered as ::after on .content
+                # so the name stays the chip's real text.
+                card_mod:
+                  style: |
+                    {% set room = states('sensor.camilo_room') %}
+                    {% if is_state('person.camilo','home')
+                          and room not in ['unknown','unavailable','not_home','none'] %}
+                    .content {
+                      display: flex !important;
+                      flex-direction: column !important;
+                      align-items: flex-start !important;
+                      line-height: 1.05 !important;
+                    }
+                    .content:after {
+                      content: "{{ room }}";
+                      font-size: 10px;
+                      font-weight: 400;
+                      opacity: 0.75;
+                      white-space: nowrap;
+                    }
+                    {% endif %}
               - type: template
                 entity: person.natalia
-                picture: "{{ state_attr('person.natalia','entity_picture') }}"
+                picture: >-
+                  {{ '' if is_state('input_boolean.bedside_night_mode','on')
+                     else state_attr('person.natalia','entity_picture') }}
+                icon: mdi:account
                 content: Natalia
                 icon_color: >-
                   {% if is_state('input_boolean.bedside_night_mode','on') %}red
@@ -434,7 +505,10 @@ views:
                 chip:
                   type: template
                   entity: person.ana
-                  picture: "{{ state_attr('person.ana','entity_picture') }}"
+                  picture: >-
+                    {{ '' if is_state('input_boolean.bedside_night_mode','on')
+                       else state_attr('person.ana','entity_picture') }}
+                  icon: mdi:account
                   content: Ana
                   icon_color: >-
                     {% if is_state('input_boolean.bedside_night_mode','on') %}red
@@ -448,7 +522,10 @@ views:
                 chip:
                   type: template
                   entity: person.ada
-                  picture: "{{ state_attr('person.ada','entity_picture') }}"
+                  picture: >-
+                    {{ '' if is_state('input_boolean.bedside_night_mode','on')
+                       else state_attr('person.ada','entity_picture') }}
+                  icon: mdi:account
                   content: Ada
                   icon_color: >-
                     {% if is_state('input_boolean.bedside_night_mode','on') %}red
@@ -496,16 +573,12 @@ views:
                 .chip-container > *:nth-child(n+3) {
                   --primary-text-color: {% if is_state('input_boolean.bedside_night_mode','on') %}#8B1A1A{% else %}#2ECC71{% endif %} !important;
                 }
-                {% if is_state('input_boolean.bedside_night_mode','on') %}
-                /* Photos are colour images and cannot be tinted red - same
-                   reason the album artwork is hidden at night. The name stays,
-                   so the chip still reads. */
-                .chip-container mushroom-shape-avatar,
-                .chip-container .picture,
-                .chip-container img {
-                  display: none !important;
-                }
-                {% endif %}
+                /* NOTE: hiding the avatar with CSS does not work here. Each chip
+                   has its own shadow root, and styles do not pierce nested
+                   shadow DOM - .chip-container is as deep as this reaches.
+                   The photo is suppressed at source instead: the picture
+                   template returns '' at night, so Mushroom falls back to the
+                   icon, which can be tinted. */
           # ---- rooms: each chip opens its own detail view --------------------
           - type: custom:mushroom-chips-card
             view_layout: {grid-area: rooms}
@@ -599,6 +672,25 @@ views:
                 icon_color: >-
                   {{ 'red' if is_state('input_boolean.bedside_night_mode','on') else 'blue-grey' }}
                 tap_action: {action: toggle}
+              # Escape hatch. kiosk_mode hides the header and sidebar on this
+              # dashboard, which on the phone app leaves no way back to the
+              # normal UI - this chip is it. /lovelace/default_view is the
+              # Overview dashboard (storage mode, unaffected by kiosk_mode).
+              # Same gate as the portfolio: only rendered when Camilo is in the
+              # bedroom, so a guest holding the phone cannot leave the kiosk.
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: sensor.camilo_room
+                    state: Cuarto Principal
+                chip:
+                  type: template
+                  icon: mdi:exit-to-app
+                  icon_color: >-
+                    {{ 'red' if is_state('input_boolean.bedside_night_mode','on') else 'grey' }}
+                  tap_action:
+                    action: navigate
+                    navigation_path: /lovelace/default_view
             card_mod: &chips
               style: |
                 ha-card {
@@ -730,6 +822,7 @@ views:
           - sensor.robotray_unrealized_pnl
           - sensor.robotray_cash
           - input_boolean.bedside_night_mode
+          - sensor.camilo_room
         styles:
           card:
             - background-color: black
@@ -802,6 +895,10 @@ views:
               const fg  = night ? '#8B1A1A' : '#FFFFFF';
               const dim = night ? '#5A1010' : 'rgba(255,255,255,0.55)';
 
+              // Same privacy gate as the home market tile.
+              const cam = states['sensor.camilo_room'];
+              if (!cam || cam.state !== 'Cuarto Principal') return '';
+
               const num = (id) => {
                 const s = states[id];
                 if (!s || s.state === 'unknown' || s.state === 'unavailable') return null;
@@ -852,6 +949,14 @@ views:
             ]]]
           chart_home: |
             [[[
+              // Privacy gate: no .rr-merc div means the renderer below never
+              // finds a target, and the old chart goes away with the old DOM.
+              const cam = hass.states['sensor.camilo_room'];
+              if (!cam || cam.state !== 'Cuarto Principal') {
+                return '<div style="color:rgba(255,255,255,0.35);font-size:15px;'
+                  + 'display:flex;align-items:center;justify-content:center;height:100%;">'
+                  + 'Portafolio oculto</div>';
+              }
               const ENTITY = "sensor.robotray_ohlc";
               const s = hass.states[ENTITY];
               const rows = (s && s.attributes && s.attributes.data) || [];
