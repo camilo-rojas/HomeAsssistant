@@ -181,6 +181,44 @@ template:
       - default_entity_id: sensor.ada_status
         state: '{{ states.input_select.mellizas_status_options.state }}'
         name: 'Ada'
+      # --- Room tracking (Bermuda BLE) ---
+      # Which room Camilo is in, from whichever Apple device he is actually
+      # carrying. The Watch is primary; while it is on its charger the iPhone
+      # takes over (and vice versa, a charging phone is simply ignored).
+      # sensor.iphone_camilo_ble_area does not exist until the phone's IRK is
+      # added to Private BLE Device - until then the phone branch is inert.
+      # Charging state comes from the Companion app, which only reports on
+      # change, so it can lag by a few minutes.
+      - default_entity_id: sensor.camilo_room
+        name: "Camilo room"
+        icon: mdi:home-map-marker
+        state: >-
+          {% set ok = ['unknown', 'unavailable', 'none', ''] %}
+          {% set charging = ['Charging', 'Full'] %}
+          {% set watch = states('sensor.apple_watch_camilo_ble_area') %}
+          {% set phone = states('sensor.iphone_camilo_ble_area') %}
+          {% set watch_chg = states('sensor.camilos_iphone_17_watch_battery_state') in charging %}
+          {% set phone_chg = states('sensor.camilos_iphone_17_battery_state') in charging %}
+          {% if not is_state('person.camilo', 'home') %}not_home
+          {% elif watch_chg and phone | lower not in ok %}{{ phone }}
+          {% elif watch | lower not in ok and not watch_chg %}{{ watch }}
+          {% elif phone | lower not in ok and not phone_chg %}{{ phone }}
+          {% else %}unknown{% endif %}
+        attributes:
+          source: >-
+            {% set ok = ['unknown', 'unavailable', 'none', ''] %}
+            {% set charging = ['Charging', 'Full'] %}
+            {% set watch = states('sensor.apple_watch_camilo_ble_area') %}
+            {% set phone = states('sensor.iphone_camilo_ble_area') %}
+            {% set watch_chg = states('sensor.camilos_iphone_17_watch_battery_state') in charging %}
+            {% set phone_chg = states('sensor.camilos_iphone_17_battery_state') in charging %}
+            {% if not is_state('person.camilo', 'home') %}person
+            {% elif watch_chg and phone | lower not in ok %}iphone
+            {% elif watch | lower not in ok and not watch_chg %}watch
+            {% elif phone | lower not in ok and not phone_chg %}iphone
+            {% else %}none{% endif %}
+          watch_charging: "{{ states('sensor.camilos_iphone_17_watch_battery_state') in ['Charging', 'Full'] }}"
+          phone_charging: "{{ states('sensor.camilos_iphone_17_battery_state') in ['Charging', 'Full'] }}"
       - default_entity_id: sensor.sensor_count
         name: "Number of sensors"
         state: "{{states.sensor | rejectattr('state', 'eq', 'unavailable') | list | count }}"
