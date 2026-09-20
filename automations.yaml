@@ -110,19 +110,39 @@
   mode: single
 - id: '1558921639466'
   alias: Luz - Prender todas al llegar @ sunset-22h
-  description: Bedroom lights when Camilo or Natalia arrive to an empty house.
+  description: >-
+    Bedroom lights between sunset and 22.00 whenever Camilo or Natalia is home:
+    either they arrive to an empty house after sunset, or they are already home
+    when the sun sets. The sunset trigger was added 2026-09-18 - before that an
+    adult who was home all afternoon never got the lights, because the only
+    other path (the 18.00 automation) is disabled and fires before sunset
+    anyway.
   triggers:
   - entity_id: group.presence
-    to: 'on'
-    from: 'off'
+    to: home
+    from: not_home
     trigger: state
+    id: arrival
+  - trigger: sun
+    event: sunset
+    id: sunset
   # group.presence is person.camilo + person.natalia only (see groups.yaml), so
-  # this fires on the adults arriving, not the twins.
+  # this fires on the adults arriving, not the twins. A group of person entities
+  # reports home/not_home, NOT on/off - the old to:'on' trigger never matched.
   conditions:
-  - condition: sun
-    after: sunset
+  - condition: state
+    entity_id: group.presence
+    state: home
   - condition: time
     before: '22:00:00'
+  # The sun condition is only needed for the arrival path; evaluated at the
+  # exact sunset instant it can land on the wrong side of the boundary.
+  - condition: or
+    conditions:
+    - condition: trigger
+      id: sunset
+    - condition: sun
+      after: sunset
   actions:
   - data: {}
     action: light.turn_on
@@ -215,9 +235,9 @@
   description: ''
   triggers:
   - entity_id: group.presence
-    to: 'off'
+    to: not_home
     for: 00:15:00
-    from: 'on'
+    from: home
     trigger: state
   conditions:
   - condition: sun

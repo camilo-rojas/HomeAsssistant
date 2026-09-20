@@ -64,8 +64,10 @@ presence:
   #   sensor.ana_status / ada_status    - plain sensors holding "Home"/"Away";
   #                                       a sensor's text state is not mappable
   #                                       to on/off, so the group stayed unknown
-  # person.* map home -> on and anything else -> off, which is exactly the
-  # "is anybody home" semantics the automation wants.
+  # A group of person.* entities reports home / not_home (NOT on/off): home if
+  # any member is home. Automations must trigger on those states - the
+  # 2026-08-28 rebuild kept to:'on', which never matched, so the arrival
+  # automation still never fired (fixed 2026-09-17/18).
   entities:
     - person.camilo
     - person.natalia
