@@ -89,6 +89,30 @@ stops the deprecated component recreating entries. `ana_tracker` and
 land on the same entity IDs so `person.ana` / `person.ada` kept working with no
 re-pointing.
 
+## Camilo presence: Bayesian fusion
+
+`person.camilo` flipped to `not_home` on 2026-09-28 while Camilo sat in the
+house on Rojas wifi: the iPhone's GPS fix landed ~77 m from the zone centre,
+radius 64 m, accuracy 10.7 m — out by 3 m. The two Watch companion-app
+trackers on the person were permanently `unknown` (the Watch app reports no
+location), so GPS was the only vote.
+
+Now:
+
+- `zone.home` radius 64 → **114 m** (`.storage/core.config`).
+- `binary_sensor.camilo_home` (Bayesian, `configuration.yaml`) fuses GPS in
+  zone, SSID `Rojas`, and either Bermuda BLE tracker `home`. Tuned as
+  "2 of 3" — the posterior table is in the YAML comment.
+- `Presence - Publish Camilo presence` (id `1759100000000`) publishes it,
+  retained, to `home/presence/camilo` → `device_tracker.camilo_presence`
+  (MQTT, `source_type: router`). When off, it passes the iPhone's zone name
+  through (e.g. `Work`) but never a lone GPS `home`.
+- `person.camilo` has **only** `device_tracker.camilo_presence`. Adding the
+  raw iPhone GPS tracker back would defeat the fusion: person prefers a
+  non-GPS `home`, else the GPS state, so GPS alone would still make him home.
+  Side effect: `person.camilo` carries no live map coordinates any more — use
+  `device_tracker.camilos_iphone_17` for the map.
+
 ## Presence state machine drift
 
 `input_select.camilo_status_options` sat on `Away` for 35 hours while

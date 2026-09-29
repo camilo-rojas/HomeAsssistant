@@ -45,6 +45,14 @@ mqtt:
       payload_home: "home"
       payload_not_home: "not_home"
       source_type: router
+    # person.camilo's only tracker. Carries binary_sensor.camilo_home when
+    # home, otherwise the iPhone's zone name (e.g. Work) or not_home.
+    - name: camilo_presence
+      unique_id: mqtt_camilo_presence
+      state_topic: "home/presence/camilo"
+      payload_home: "home"
+      payload_not_home: "not_home"
+      source_type: router
 
 recorder:
     purge_keep_days: 10
@@ -148,17 +156,45 @@ trakt_tv:
 #    name: Night
 #    after: sunset
 #    before: sunrise
-#  - platform: bayesian
-#    prior: 0.7
-#    name: Camilo Presence
-#    probability_threshold: 0.75
-#    device_class: presence
-#    observations:
-#    - entity_id: 'device_tracker.camilos_iphone_17'
-#      prob_given_true: 0.9
-#      prob_given_false: 0.1
-#      platform: 'state'
-#      to_state: 'home'
+
+# ---------------------------------------------------------------------------
+# Camilo home - fuses three independent signals so that no single bad one
+# (GPS drift, a stale SSID, the Watch left on its charger) can flip presence.
+# Tuned as "2 of 3": prior 0.6, threshold 0.9. Posteriors per combination
+# (G=GPS in zone, W=on Rojas wifi, B=seen by a BLE proxy):
+#   GWB .9998 | GW- .988 | G-B .961 | -WB .944   -> home
+#   G-- .33   | -W- .25  | --B .09  | --- .002   -> away
+# A false observation applies the complement (1-p), so absence counts as
+# evidence against; unknown/unavailable entities are skipped.
+# Feeds device_tracker.camilo_presence (below) via the "Presence - Publish
+# Camilo presence" automation; that tracker is person.camilo's only source.
+# ---------------------------------------------------------------------------
+binary_sensor:
+  - platform: bayesian
+    name: Camilo home
+    unique_id: bayesian_camilo_home
+    device_class: presence
+    prior: 0.6
+    probability_threshold: 0.9
+    observations:
+      - platform: state
+        entity_id: device_tracker.camilos_iphone_17
+        to_state: home
+        prob_given_true: 0.93
+        prob_given_false: 0.05
+      - platform: state
+        entity_id: sensor.camilos_iphone_17_ssid
+        to_state: Rojas
+        prob_given_true: 0.90
+        prob_given_false: 0.05
+      # prob_given_false is the highest of the three: the Watch on its
+      # charger at home while Camilo is out is a real, recurring case.
+      - platform: template
+        value_template: >-
+          {{ is_state('device_tracker.iphone_camilo_ble_bermuda_tracker', 'home')
+             or is_state('device_tracker.apple_watch_camilo_ble_bermuda_tracker', 'home') }}
+        prob_given_true: 0.85
+        prob_given_false: 0.10
 
 #      mami_iphone: 192.168.0.126
 #      papi_iphone: 192.168.0.125
@@ -197,7 +233,8 @@ template:
           {% set charging = ['Charging', 'Full'] %}
           {% set watch = states('sensor.apple_watch_camilo_ble_area') %}
           {% set phone = states('sensor.iphone_camilo_ble_area') %}
-          {% set watch_chg = states('sensor.camilos_iphone_17_watch_battery_state') in charging %}
+          {% set wb = states('sensor.camilos_iphone_17_apple_watch_battery_state') %}
+          {% set watch_chg = (wb in charging) if wb not in ['unknown','unavailable'] else states('sensor.camilos_iphone_17_watch_battery_state') in charging %}
           {% set phone_chg = states('sensor.camilos_iphone_17_battery_state') in charging %}
           {% if not is_state('person.camilo', 'home') %}not_home
           {% elif watch_chg and phone | lower not in ok %}{{ phone }}
@@ -210,7 +247,8 @@ template:
             {% set charging = ['Charging', 'Full'] %}
             {% set watch = states('sensor.apple_watch_camilo_ble_area') %}
             {% set phone = states('sensor.iphone_camilo_ble_area') %}
-            {% set watch_chg = states('sensor.camilos_iphone_17_watch_battery_state') in charging %}
+            {% set wb = states('sensor.camilos_iphone_17_apple_watch_battery_state') %}
+            {% set watch_chg = (wb in charging) if wb not in ['unknown','unavailable'] else states('sensor.camilos_iphone_17_watch_battery_state') in charging %}
             {% set phone_chg = states('sensor.camilos_iphone_17_battery_state') in charging %}
             {% if not is_state('person.camilo', 'home') %}person
             {% elif watch_chg and phone | lower not in ok %}iphone

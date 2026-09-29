@@ -1216,3 +1216,35 @@
     data:
       option: "{{ 'Home' if is_state('person.camilo','home') else 'Away' }}"
   mode: single
+- id: '1759100000000'
+  alias: Presence - Publish Camilo presence
+  description: >-
+    Mirrors binary_sensor.camilo_home (Bayesian: GPS + Rojas wifi + BLE) onto
+    device_tracker.camilo_presence, the only tracker on person.camilo.
+
+    When the Bayesian sensor is off, the iPhone's GPS zone is passed through so
+    person.camilo still shows named zones (Work etc.) - but a GPS "home" on its
+    own is published as not_home, since the Bayesian sensor already outvoted it.
+    Retained, so the tracker survives a restart.
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.camilo_home
+    - device_tracker.camilos_iphone_17
+  - trigger: homeassistant
+    event: start
+  conditions:
+  - condition: template
+    value_template: "{{ states('binary_sensor.camilo_home') in ['on', 'off'] }}"
+  actions:
+  - action: mqtt.publish
+    data:
+      topic: home/presence/camilo
+      retain: true
+      payload: >-
+        {% set gps = states('device_tracker.camilos_iphone_17') %}
+        {% if is_state('binary_sensor.camilo_home', 'on') %}home
+        {% elif gps in ['home', 'not_home', 'unknown', 'unavailable'] %}not_home
+        {% else %}{{ gps }}{% endif %}
+  mode: queued
+  max: 5
