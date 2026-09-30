@@ -33,6 +33,24 @@ Findings worth keeping:
 - 5 GHz was **three radios on overlapping channels** — two APs both on 153,
   inside the gateway's 80 MHz block at 149. Now 36 / 44 / 149, no overlap, no
   DFS.
+- 2.4 GHz is **pinned 1 / 6 / 11 at 20 MHz**: UDR 1, U6 LR 6, AC LR 11
+  (2026-09-30). On auto, the UDR and AC LR had both chosen channel 1, with the
+  UDR's airtime at 85%. Never use 12/13: ESP-IDF's default country code "01"
+  does not scan them.
+- **ESP32-C3 BLE proxies vs the UDR.** Comedor (U6 LR, ch 6) was the only
+  Super Mini that stayed up; the others were only ever seen briefly on the UDR,
+  whose 2.4 GHz radio is WiFi 7 (`is_11be`). U7-series WiFi 7 APs are
+  documented as kicking ESP32 clients ("Excessive Retries", handshake
+  failures) while U6/AC APs are fine. The failing boards also got
+  `output_power: 8.5dB` and default BLE scan parameters (see the YAML
+  comments in `esphome/`). Niñas and sala run 8.5 dB; cocina 11 dB after
+  the AC LR heard it at only −80 dBm. The fix was almost certainly the scan
+  window: the UDR is still on channel 1 at ~85% airtime and niñas joined it
+  first try once the scan was back at defaults.
+- **AP-Pro Niñas is offline by design** until the move to the new house at
+  the end of 2026; UniFi still lists it on the old 192.168.0.x network.
+  `esphome/` is its own git repo (the ESPHome dashboard auto-commits) and is
+  not published here, since the YAML holds API encryption keys.
 - **BSS Transition (802.11v) and Fast Roaming (802.11r) are off.** A client was
   being steered off a −38 dBm AP onto a −61 dBm one, failing authentication
   there, and going offline ~30 s each time. Roaming away from −38 is never a
