@@ -1,32 +1,12 @@
-# View Assist user dashboard overrides.
-#
-# WHY THIS FILE EXISTS
-# The dashboard updater preserves only the "views" key of the live dashboard:
-#     new_dashboard_config["views"] = old_dashboard_config.get("views")
-# Everything else - including the whole button_card_templates block - is
-# replaced with the upstream version on every dashboard update. Our night-mode
-# icon colour lives in button_card_templates.icon_template, so without this
-# file it is silently lost each time.
-#
-# After the update, assets/dashboard.py calls _apply_user_dashboard_changes(),
-# which loads this file, runs it through json_to_dictdiffer() and applies it to
-# the live dashboard with dictdiffer.patch(). So this is NOT a config fragment -
-# it is a patch spec with add / remove / change keys:
-#     change: [{path, orig, updated}]
-#     add/remove: [{path, key, value}]
-#
-# Verified against upstream dashboard 1.4.0: icon_template.styles.icon is still
-# [ {display: grid}, {color: white} ], so index 1 / key "color" / orig "white"
-# is still the correct target. If a future upstream release reorders that list,
-# this patch will no-op and the icons will go back to white - that is the
-# failure mode to look for.
 change:
-  - path: button_card_templates.icon_template.styles.icon.1.color
-    orig: white
-    updated: |-
-      [[[
-        try {
-          return hass.states[variables.var_assistsat_entity].attributes.mode === "night"
-            ? "#8B1A1A" : "white";
-        } catch { return "white"; }
-      ]]]
+- path:
+  - button_card_templates
+  - icon_template
+  - styles
+  - icon
+  - 1
+  - color
+  orig: white
+  updated: "[[[\n  try {\n    return hass.states[variables.var_assistsat_entity].attributes.mode
+    === \"night\"\n      ? \"#8B1A1A\" : \"white\";\n  } catch { return \"white\";
+    }\n]]]"
