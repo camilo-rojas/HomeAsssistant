@@ -418,3 +418,47 @@ turn_off_sala_after_20_mins_duplicate:
   alias: Turn off office after 20 mins
   mode: single
   description: ''
+toggle_lampara_cuarto:
+  alias: Toggle lampara cuarto
+  # Exists so the Apple Watch can flip the bedroom lamp in one tap: it shows up
+  # in the watch app's Scripts list, and in the Shortcuts app as a "Perform
+  # action" target, which is the only way to act from a watch face without
+  # launching Home Assistant (complications can only open the app).
+  icon: mdi:lamp
+  mode: single
+  sequence:
+  - action: light.toggle
+    target:
+      entity_id: light.cuarto_lampara
+    data: {}
+toggle_luces_cuarto:
+  alias: Toggle luces cuarto
+  # All three bedroom lights as one switch, for the Apple Watch / Shortcuts.
+  # Deliberately NOT light.toggle on a group: with mixed states toggle flips
+  # each light individually and you end up with the inverse of what you had.
+  # Instead: if anything is on, everything goes off; otherwise everything on.
+  icon: mdi:lamps
+  mode: single
+  sequence:
+  - if:
+    - condition: template
+      value_template: >-
+        {{ expand('light.cuarto_luz_camilo', 'light.cuarto_luz_nati',
+                  'light.cuarto_lampara')
+           | selectattr('state', 'eq', 'on') | list | count > 0 }}
+    then:
+    - action: light.turn_off
+      target:
+        entity_id:
+        - light.cuarto_luz_camilo
+        - light.cuarto_luz_nati
+        - light.cuarto_lampara
+      data: {}
+    else:
+    - action: light.turn_on
+      target:
+        entity_id:
+        - light.cuarto_luz_camilo
+        - light.cuarto_luz_nati
+        - light.cuarto_lampara
+      data: {}
