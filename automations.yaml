@@ -1004,22 +1004,39 @@
     still there, and because the trigger is an off-to-on edge, walking past
     again produced no state change and could not turn it back on. Now the light
     follows presence and only turns off 10 minutes after motion actually clears.
+    The front door is a second 'on' trigger: on 2026-10-05 Camilo walked in at
+    20:18 and the MS6 never saw him, so the light stayed off. A door opening
+    never moves the motion sensor, so motion_clear cannot undo it; door_idle
+    turns the light off once the door has been shut and motion off for 10
+    minutes, which also covers the door opening on the way out.
   triggers:
   - trigger: state
     entity_id: binary_sensor.multisensor6_sala_home_security_motion_detection_2
     to: 'on'
     id: motion_on
   - trigger: state
+    entity_id: binary_sensor.door_window_sensor_6_open
+    from: 'off'
+    to: 'on'
+    id: door_open
+  - trigger: state
     entity_id: binary_sensor.multisensor6_sala_home_security_motion_detection_2
     to: 'off'
     for: '00:10:00'
     id: motion_clear
+  - trigger: state
+    entity_id: binary_sensor.door_window_sensor_6_open
+    to: 'off'
+    for: '00:10:00'
+    id: door_idle
   conditions: []
   actions:
   - choose:
     - conditions:
       - condition: trigger
-        id: motion_on
+        id:
+        - motion_on
+        - door_open
       - condition: or
         conditions:
         - condition: state
@@ -1039,6 +1056,18 @@
     - conditions:
       - condition: trigger
         id: motion_clear
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.dimmable_led_light_bulb
+        data: {}
+    - conditions:
+      - condition: trigger
+        id: door_idle
+      - condition: state
+        entity_id: binary_sensor.multisensor6_sala_home_security_motion_detection_2
+        state: 'off'
+        for: '00:10:00'
       sequence:
       - action: light.turn_off
         target:
