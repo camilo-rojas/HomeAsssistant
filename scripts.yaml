@@ -489,3 +489,19 @@ musica_estudio_toggle:
           entity_id: media_player.spotify_camilo
     default:
     - action: script.play_cam
+    # play_cam sets shuffle before play_media, but Spotify resets shuffle when a
+    # new playlist starts, so it always came up unshuffled from track 1. Turn
+    # shuffle on once playback has started, then skip so the first song is
+    # random too.
+    - wait_template: "{{ is_state('media_player.spotify_camilo', 'playing') }}"
+      timeout: '00:00:15'
+      continue_on_timeout: false
+    - action: media_player.shuffle_set
+      target:
+        entity_id: media_player.spotify_camilo
+      data:
+        shuffle: true
+    - delay: '00:00:01'
+    - action: media_player.media_next_track
+      target:
+        entity_id: media_player.spotify_camilo
