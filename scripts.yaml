@@ -462,3 +462,30 @@ toggle_luces_cuarto:
         - light.cuarto_luz_nati
         - light.cuarto_lampara
       data: {}
+musica_estudio_toggle:
+  alias: Musica Estudio (play / pause)
+  description: >-
+    Musica button on the study Echo Show 5. If Spotify is already playing or
+    paused on the Estudio Echo, toggle play/pause; otherwise start the study
+    playlist with Play Cam Estudio. Checking the source means a tap in the
+    study never pauses music that is playing somewhere else.
+  icon: mdi:music
+  mode: single
+  sequence:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: media_player.spotify_camilo
+        state:
+        - playing
+        - paused
+      - condition: state
+        entity_id: media_player.spotify_camilo
+        attribute: source
+        state: Estudio Echo
+      sequence:
+      - action: media_player.media_play_pause
+        target:
+          entity_id: media_player.spotify_camilo
+    default:
+    - action: script.play_cam
